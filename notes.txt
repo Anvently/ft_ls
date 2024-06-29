@@ -1,0 +1,58 @@
+
+
+flags  
+
+Format : l, h, color, u
+	l => long listing
+	h => print sizes using verbal unit (K, M, G)
+	color => always (default), never, auto (only with a terminal)
+	u => print access time instead of modification time 
+
+Filtering : a, A, d
+	a => accept .
+	A => -a without . and ..
+	d => only info about the given directory in arg
+
+Ordering : r, t, U, u 
+	r => reverse
+	t => sort by modification time
+	U => do not sort
+	u => sort by access time (except if used with -l without -t)
+	S => sort by file size, largest first
+
+Recursive : R,
+	for each folder listed, repeat the command
+		- as if the folder itself was inserted as the next argument
+
+Shortcut : f
+	f => disable color, add -a -U
+
+if 
+
+
+non-alphanum chars must be within quotes
+
+If more than one argument or Recursive, special format 
+	=> for folders, add "[name]:" before results
+
+1: parsing
+	- parse entries
+		- get flags
+		- get info
+		- check filters
+			- -a/-a for hidden folders
+		- if folder, add to sorted list of folders, except if -d
+		- if files or (-d flag), add to sorted list of files
+	- print list of files
+	- loop folders :
+		- print directory name if not single arg
+		- generate and print list of file
+			- if recursive, each directory is appended as the next folder in the list
+
+
+Token element :
+	- a list of file (only for multiple args)
+		- sort by insertion or in place
+		- print files
+	- a directory
+		
