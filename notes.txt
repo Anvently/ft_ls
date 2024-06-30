@@ -2,23 +2,27 @@
 
 flags  
 
-Format : l, h, color, u
+Format : l, h, color, u, i, time, 1, wX/--width=X
 	l => long listing
 	h => print sizes using verbal unit (K, M, G)
 	color => always (default), never, auto (only with a terminal)
-	u => print access time instead of modification time 
-
+	u, --time=atime/access/use => print access time instead of modification time 
+	i => show inode column
+	time => specify which time to print and/or use for sorting
+	1 => force single line
+	wX / --width=X => manually fix width of columns in chars
 Filtering : a, A, d
 	a => accept .
 	A => -a without . and ..
 	d => only info about the given directory in arg
 
-Ordering : r, t, U, u 
+Ordering : r, t, U, u, sort
 	r => reverse
 	t => sort by modification time
 	U => do not sort
 	u => sort by access time (except if used with -l without -t)
 	S => sort by file size, largest first
+	sort => specify sorting type
 
 Recursive : R,
 	for each folder listed, repeat the command

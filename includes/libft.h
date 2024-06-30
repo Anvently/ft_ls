@@ -169,6 +169,7 @@ char	*ft_gnl(int fd);
 -----------------------------------------------------------------*/
 
 int		ft_printf(const char *str, ...);
+int		ft_dprintf(int fd, const char *str, ...);
 
 //Error handling
 void	*null_error(char *msg);
@@ -307,8 +308,8 @@ void	cast_to_dest(void *dest, void *value, char type);
 
 //Printing functions
 
-int		print_fields(t_list *fields);
-int		print_field(t_field *field);
+int		print_fields(int fd, t_list *fields);
+int		print_field(int fd, t_field *field);
 char	*build_str(t_field *field);
 char	*get_str_value(t_field *field);
 
