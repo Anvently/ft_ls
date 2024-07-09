@@ -1,5 +1,7 @@
+#ifndef FT_LS_H
+# define FT_LS_H
 
-#include <stdbool.h>
+# include <stdbool.h>
 
 enum	SORT_BY {SORT_BY_NONE = -1,
 				SORT_BY_ASCII,
@@ -27,6 +29,11 @@ enum	FILTER_FILE {
 			FILTER_ALL
 };
 
+enum	LS_ERRORS {
+		ERROR_INTERNAL = 1,
+		ERROR_INPUT = 2
+};
+
 typedef struct s_options
 {
 	bool				long_listing;
@@ -42,6 +49,9 @@ typedef struct s_options
 	bool				colorize;
 	enum FILTER_FILE	filter;
 } t_opts;
+
+typedef struct s_list t_list;
+
 
 enum	OPTIONS {
 			OPT_LONG, //long listing -l
@@ -61,7 +71,8 @@ enum	OPTIONS {
 			OPT_SORT_SIZE, // -S
 			OPT_SORT, // --sort
 			OPT_RECURSIVE, // -R
-			OPT_ALIAS_f // => --color=none + -a + -U
+			OPT_ALIAS_f, // => --color=none + -a + -U
+			NBR_OPTIONS
 };
 
 
@@ -73,27 +84,16 @@ typedef struct s_ls_flag {
 } t_ls_flag;
 
 
-int	option_set_long_listing(t_opts* options, char*);
-int	option_set_human_readable(t_opts* options, char*);
-int	option_set_color(t_opts* options, char* arg);
-int	option_set_access_time(t_opts* options, char*);
-int	option_set_inode(t_opts* options, char*);
-int	option_set_row_format(t_opts* options, char*);
-int	option_set_column_width(t_opts* options, char* width);
-int	option_set_filter_all(t_opts* options, char*);
-int	option_set_filter_aall(t_opts* options, char*);
-int	option_set_filter_folder(t_opts* options, char*);
-int	option_set_sort_reverse(t_opts* options, char*);
-int	option_set_sort_time(t_opts* options, char*);
-int	option_set_sort_none(t_opts* options, char*);
-int	option_set_sort_size(t_opts* options, char*);
-int	option_set_recursive(t_opts* options, char*);
-int	option_set_alias_f(t_opts* options, char*);
+int	ls_error_invalid_flag(char flag);
+int	ls_error_invalid_option(char* arg);
+int	ls_error_ambiguous_option(char* arg, t_list* matches);
+int	ls_error_flag_missing_argument(char option);
+int	ls_error_option_missing_argument(char* option);
+int	ls_error_option_extra_argument(char* option, int end);
 
-int	option_argument_sort(t_opts* options, char* arg);
-int	option_argument_time(t_opts* options, char* arg);
+int	ls_parse_args(int nbr, char** args, t_opts* options, t_list** files);
+int	ls_push_file(char* path, t_opts* options, t_list** files);
 
+void	ls_print_options(t_opts* options);
 
-int	ls_parse_flags(int nbr, char** args, t_opts* options);
-
-int	ls_parse_args(int nbr, char** args, t_opts* options);
+#endif

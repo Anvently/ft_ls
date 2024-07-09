@@ -5,19 +5,35 @@
 
 int	ls_error_invalid_flag(char flag) {
 	ft_dprintf(2, "ft_ls: invalid option -- '%c'\n", flag);
-	return (2);
+	return (ERROR_INPUT);
 }
 
-int	ls_error_invalid_otion(char* arg) {
-	ft_dprintf(2, "ft_ls: unrecognised option '%s'\n", arg);
-	return (2);
+int	ls_error_invalid_option(char* arg) {
+	ft_dprintf(2, "ft_ls: unrecognised option '--%s'\n", arg);
+	return (ERROR_INPUT);
 }
 
-int	ls_error_ambiguous_option(char* arg, char** matches) {
+int	ls_error_ambiguous_option(char* arg, t_list* matches) {
 	ft_dprintf(2, "ft_ls: option '%s' is ambiguous; possibilities: ", arg);
-	while (matches && *matches)
-		ft_dprintf(2, " '--%s'", *matches++);
+	while (matches) {
+		ft_dprintf(2, " '--%s'", (const char*)matches->content);
+		matches = matches->next;
+	}
 	write(2, "\n", 1);
-	return (2);
-};
+	return (ERROR_INPUT);
+}
 
+int	ls_error_flag_missing_argument(char option) {
+	ft_dprintf(2, "ft_ls: option requires an argument -- '%c'\n", option);
+	return (ERROR_INPUT);
+}
+
+int	ls_error_option_missing_argument(char* option) {
+	ft_dprintf(2, "ft_ls: option '--%s' requires an argument\n", option);
+	return (ERROR_INPUT);
+}
+
+int	ls_error_option_extra_argument(char* option, int end) {
+	ft_dprintf(2, "ft_ls: option '--%.*s' doesn't allow an argument\n", end, option);
+	return (ERROR_INPUT);
+}

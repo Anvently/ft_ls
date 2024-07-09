@@ -4,7 +4,7 @@ INCLUDES	=	includes/
 SRCS_FOLDER	=	srcs/
 OBJS_FOLDER	=	.objs/
 
-SRCS_FILES	=	main.c error.c options.c parse_args.c
+SRCS_FILES	=	main.c error.c options.c parse_args.c file_info.c debug.c
 
 OBJS		=	$(addprefix $(OBJS_FOLDER),$(SRCS_FILES:.c=.o))
 SRCS		=	$(addprefix $(SRCS_FOLDER),$(SRCS_FILES))
@@ -23,7 +23,7 @@ all: $(NAME)
 
 $(NAME): $(LIBFT) $(OBJS)
 	@echo "\n-----COMPILING $(NAME)-------\n"
-	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
+	$(CC) $(CFLAGS) $(OBJS) -o $(NAME) -Llibft/ -lft -no-pie
 	@echo "Executable has been successfully created."
 
 
