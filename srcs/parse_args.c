@@ -110,9 +110,11 @@ static t_ls_flag options_map[] = {
 /// @brief Parse a short flag in the form and enable it
 /// @param arg 
 /// @param options 
-/// @return ```2``` f unknown flag
+/// @return ```2``` if unknown flag. ```-1``` if no error but what's remaining
+/// in arg should be considered as option argument and thus ignored.
 static int	ls_parse_arg_short(char* option, t_opts *options) {
 	t_ls_flag*	flag_info = NULL;
+	int			ret = 0;
 
 	if (*option == '\0')
 		return (0);
@@ -127,15 +129,24 @@ static int	ls_parse_arg_short(char* option, t_opts *options) {
 	if (flag_info->has_param) {
 		if (option[1] == '\0')
 			return (ls_error_flag_missing_argument(*option));
-		return ((*flag_info->handler)(options, option + 1));
+		ret = (*flag_info->handler)(options, option + 1);
+		if (ret)
+			return (ret);
+		return (-1);
 	}
 	return ((*flag_info->handler)(options, NULL));
 }
 
 static int	ls_parse_flag_list(char* arg, t_opts* options) {
-	for (int i = 0; arg[i]; i++)
-		if (ls_parse_arg_short(arg + i, options))
+	int	ret = 0;
+
+	for (int i = 0; arg[i]; i++) {
+		ret = ls_parse_arg_short(arg + i, options);
+		if (ret > 0)
 			return (ERROR_INPUT);
+		if (ret < 0)
+			break;
+	}
 	return (0);
 }
 

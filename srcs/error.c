@@ -14,9 +14,9 @@ int	ls_error_invalid_option(char* arg) {
 }
 
 int	ls_error_ambiguous_option(char* arg, t_list* matches) {
-	ft_dprintf(2, "ft_ls: option '%s' is ambiguous; possibilities: ", arg);
+	ft_dprintf(2, "ft_ls: option '--%s' is ambiguous; possibilities: ", arg);
 	while (matches) {
-		ft_dprintf(2, " '--%s'", (const char*)matches->content);
+		ft_dprintf(2, " '--%s'", ((t_ls_flag*)matches->content)->long_id);
 		matches = matches->next;
 	}
 	write(2, "\n", 1);
