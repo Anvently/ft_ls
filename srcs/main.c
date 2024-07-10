@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <libft.h>
 #include <ft_ls.h>
+#include <limits.h>
+#include <errno.h>
+#include <sys/ioctl.h>
 
 /* static char**	options_map_str[sizeof(enum OPTIONS)] = {\
 		[OPT_FORMAT_ATIME] = (char*[]){"", ""},
@@ -14,14 +17,51 @@
 // }
 
 
+static int	free_all(int status, t_data* data) {
+	ft_lstclear(&data->files, &ls_free_file_info);
+	ft_lstclear(&data->targets, &ls_free_file_info);
+	return (status);
+}
+
+static int	init_data(t_data* data, char** env) {
+	struct winsize w;
+	char*	env_width;
+
+	data->max_column_width = 0;
+	data->min_column_width = UINT_MAX;
+	if (isatty(STDOUT_FILENO)) {
+		data->is_tty = true;
+		if (ioctl(0, TIOCGWINSZ, &w) < 0)
+			return (ERROR_FATAL);
+		data->tty_width = w.ws_col;
+	}
+	else if (errno)
+		return (ERROR_FATAL);
+	else {
+		env_width = ft_getenv("COLUMNS", env);
+		if (env_width == NULL)
+			return (ERROR_FATAL);
+		if (env_width[0] == '\0')
+			data->tty_width = 80;
+		else
+			data->tty_width = (unsigned int)ft_atoi(env_width);
+		free(env_width);
+	}
+	return (0);
+}
+
 int	main(int argc, char **argv, char **env) {
-	t_opts	options = {0};
-	t_list*	files = NULL;
+	t_data	data = {0};
 	int	ret = 0;
 
-	(void) env;
-	ret = ls_parse_args(argc - 1, argv + 1, &options, &files);
-	ls_print_options(&options);
-	ft_lstclear(&files, NULL);
-	return (ret);
+	if (init_data(&data, env))
+		return (ERROR_FATAL);
+	ret = ls_parse_args(argc - 1, argv + 1, &data);
+	if ((ret < 0 || ret > 1) || (ret == 1 && !data.files && !data.targets))
+		return (free_all(ret, &data));
+	if (!data.files && !data.targets && (ret = ls_retrieve_arg_file(".", &data)))
+		return (free_all(ret, &data));
+	ret = ls_print(&data);
+	ls_print_options(&data.options);
+	return (free_all(ret, &data));
 }

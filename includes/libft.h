@@ -67,6 +67,7 @@ char	*ft_strnstr(const char *big, const char *little, size_t len);
 int		ft_strcmp(const char *s1, const char *s2);
 int		ft_strncmp(const char *s1, const char *s2, size_t n);
 int		ft_strncmp_rev(const char *s1, const char *s2, size_t n);
+int		ft_stricmp(const char* s1, const char* s2);
 void	*ft_memchr(const void *s, int c, size_t n);
 int		ft_memcmp(const void *s1, const void *s2, size_t n);
 
@@ -86,6 +87,7 @@ char	***ft_free_strss(char ***strs);
 int		ft_strslen(char **strs);
 int		ft_strsslen(char ***strs);
 char	*ft_strschr(char **strs, char *str);
+char	*ft_getenv(char *var, char **env);
 
 ///---------------------- TYPE CONVERSION -----------------------
 
@@ -142,6 +144,7 @@ void	ft_lstclear(t_list **list, void (*del)(void *));
 void	ft_lstiter(t_list *list, void (*f)(void *));
 t_list	*ft_lstmap(t_list *lst, void *(*f)(void *), void (*del)(void *));
 t_list	*ft_lstmerge(t_list *node, t_list **from);
+void	ft_lstinsert_comp(t_list** list, t_list* node, int (*comp)(void*, void*), bool reverse);
 
 ///----------------------- READ ------------------------------
 

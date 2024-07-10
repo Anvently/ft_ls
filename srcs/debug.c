@@ -54,7 +54,7 @@ void	ls_print_options(t_opts* options) {
 			break;
 
 		case TIME_BY_CTIME:
-			ft_printf("creation time\n");
+			ft_printf("change time\n");
 			break;
 
 		case TIME_BY_MTIME:

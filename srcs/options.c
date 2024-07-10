@@ -111,3 +111,8 @@ int	option_argument_time(t_opts* options, char* arg) {
 	(void) arg;
 	return (0);
 };
+
+int	option_set_column(t_opts* options, char* arg) {
+	(void) arg;
+	options->format_by = FORMAT_BY_COLUMN;
+};

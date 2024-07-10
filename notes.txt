@@ -49,7 +49,7 @@ If more than one argument or Recursive, special format
 		- if files or (-d flag), add to sorted list of files
 	- print list of files
 	- loop folders :
-		- print directory name if not single arg
+		- print directory name if not single arg or if recursive
 		- generate and print list of file
 			- if recursive, each directory is appended as the next folder in the list
 

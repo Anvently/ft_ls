@@ -17,6 +17,7 @@ int	option_set_sort_none(t_opts* options, char*);
 int	option_set_sort_size(t_opts* options, char*);
 int	option_set_recursive(t_opts* options, char*);
 int	option_set_alias_f(t_opts* options, char*);
+int	option_set_column(t_opts* options, char*);
 int	option_argument_sort(t_opts* options, char* arg);
 int	option_argument_time(t_opts* options, char* arg);
 
@@ -104,6 +105,10 @@ static t_ls_flag options_map[] = {
 	[OPT_ALIAS_f]		= (t_ls_flag) {
 		.short_id = 'f',
 		.handler = option_set_alias_f
+	},
+	[OPT_FORCE_COLUMN]	= (t_ls_flag) {
+		.short_id = 'C',
+		.handler = option_set_column
 	}
 };
 
@@ -150,6 +155,11 @@ static int	ls_parse_flag_list(char* arg, t_opts* options) {
 	return (0);
 }
 
+/// @brief 
+/// @param arg 
+/// @param options 
+/// @return ```-1``` if allocation error.
+/// ```2``` of input error
 static int	ls_parse_option_long(char* arg, t_opts* options) {
 	t_ls_flag*	flag_info = NULL;
 	t_list*		matches = NULL, *node;
@@ -164,7 +174,7 @@ static int	ls_parse_option_long(char* arg, t_opts* options) {
 			node = ft_lstnew(&options_map[i]);
 			if (node == NULL) {
 				ft_lstclear(&matches, NULL);
-				return (ERROR_INTERNAL);
+				return (ERROR_FATAL);
 			}
 			ft_lstadd_back(&matches, node);
 		}
@@ -198,6 +208,8 @@ static int	ls_parse_option_long(char* arg, t_opts* options) {
 /// @param options 
 /// @return ```2``` if input errors
 static int	ls_parse_retrieve_options(int nbr, char** args, t_opts* options) {
+	int	ret = 0;
+
 	for (int i = 0; i < nbr; i++) {
 		if (args[i][0] == '-') {
 			if (args[i][1] == '-' && (ft_isspace(args[i][2]) || !args[i][2])) {
@@ -205,11 +217,11 @@ static int	ls_parse_retrieve_options(int nbr, char** args, t_opts* options) {
 				break;
 			}
 			else if (args[i][1] == '-') {
-				if (ls_parse_option_long(args[i] + 2, options))
-					return (ERROR_INPUT);
+				if ((ret = ls_parse_option_long(args[i] + 2, options)))
+					return (ret);
 			} else {
-				if (ls_parse_flag_list(args[i] + 1, options))
-					return (ERROR_INPUT);
+				if ((ret = ls_parse_flag_list(args[i] + 1, options)))
+					return (ret);
 			}
 			args[i] = NULL;
 		}
@@ -224,16 +236,23 @@ static int	ls_parse_retrieve_options(int nbr, char** args, t_opts* options) {
 /// @param files 
 /// @return ```2``` if flag error cause by user.
 /// ```1``` if at least one file was inaccessibe
-int	ls_parse_args(int nbr, char** args, t_opts *options, t_list** files) {
+/// ```-1``` if fatal error
+int	ls_parse_args(int nbr, char** args, t_data* data) {
 	int		ret = 0;
 
-	if (ls_parse_retrieve_options(nbr, args, options))
-		return (ERROR_INPUT);
+	if ((ret = ls_parse_retrieve_options(nbr, args, &data->options)))
+		return (ret);
 	for (int i = 0; i < nbr; i++) {
 		if (args[i] == NULL)
 			continue;	
-		if (ls_push_file(args[i], options, files))
-			ret = 1;
+		switch (ls_retrieve_arg_file(args[i], data)) {
+			case 1:
+				ret = 1;
+				break;
+			case -1:
+				return (-1);
+				break;
+		}
 	}
 	return (ret);
 }
