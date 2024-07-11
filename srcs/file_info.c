@@ -37,15 +37,21 @@ static int	get_file_info(const char* path, t_file_info** file_info) {
 }
 
 static int	comp_ctime(void* lhd, void* rhd) {
-	return (((t_file_info*)lhd)->stat.st_ctime < ((t_file_info*)rhd)->stat.st_ctime);
+	if (((t_file_info*)lhd)->stat.st_ctime <= ((t_file_info*)rhd)->stat.st_ctime)
+		return (-1);
+	return (1);
 }
 
 static int	comp_mtime(void* lhd, void* rhd) {
-	return (((t_file_info*)lhd)->stat.st_mtime < ((t_file_info*)rhd)->stat.st_mtime);
+	if (((t_file_info*)lhd)->stat.st_mtime <= ((t_file_info*)rhd)->stat.st_mtime)
+		return (-1);
+	return (1);
 }
 
 static int	comp_atime(void* lhd, void* rhd) {
-	return (((t_file_info*)lhd)->stat.st_atime < ((t_file_info*)rhd)->stat.st_atime);	
+	if (((t_file_info*)lhd)->stat.st_atime <= ((t_file_info*)rhd)->stat.st_atime)
+		return (-1);
+	return (1);
 }
 
 static int	comp_ascii(void* lhd, void* rhd) {
@@ -57,7 +63,9 @@ static int	comp_alpha(void* lhd, void* rhd) {
 }
 
 static int	comp_size(void* lhd, void* rhd) {
-	return (((t_file_info*)lhd)->stat.st_size < ((t_file_info*)rhd)->stat.st_size);
+	if (((t_file_info*)lhd)->stat.st_size <= ((t_file_info*)rhd)->stat.st_size)
+		return (-1);
+	return (1);
 }
 
 /// @brief Append ```file_info``` to ```dest``` according to

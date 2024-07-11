@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <string.h>
 
 /* static char**	options_map_str[sizeof(enum OPTIONS)] = {\
 		[OPT_FORMAT_ATIME] = (char*[]){"", ""},
@@ -33,18 +34,19 @@ static int	init_data(t_data* data, char** env) {
 		data->is_tty = true;
 		if (ioctl(0, TIOCGWINSZ, &w) < 0)
 			return (ERROR_FATAL);
-		data->tty_width = w.ws_col;
+		data->options.tty_width = w.ws_col;
 	}
-	else if (errno)
+	else if (errno != ENOTTY)
 		return (ERROR_FATAL);
 	else {
+		data->options.format_by = FORMAT_BY_LINE;
 		env_width = ft_getenv("COLUMNS", env);
 		if (env_width == NULL)
 			return (ERROR_FATAL);
 		if (env_width[0] == '\0')
-			data->tty_width = 80;
+			data->options.tty_width = 80;
 		else
-			data->tty_width = (unsigned int)ft_atoi(env_width);
+			data->options.tty_width = (unsigned int)ft_atoi(env_width);
 		free(env_width);
 	}
 	return (0);

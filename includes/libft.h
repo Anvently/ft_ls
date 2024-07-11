@@ -149,9 +149,10 @@ void	ft_lstpop_front(t_list** list, void (*del)(void *));
 
 ///----------------------- READ ------------------------------
 
-int		ft_lstsize(t_list *lst);
-t_list	*ft_lstlast(t_list *lst);
-void	ft_lstprint(t_list *pt, void (*disp)(void *));
+int				ft_lstsize(t_list *lst);
+t_list			*ft_lstlast(t_list *lst);
+void			ft_lstprint(t_list *pt, void (*disp)(void *));
+t_list*			ft_lstat(t_list* list, const unsigned int index);
 
 /* ------------------------------- STRING LIST ------------------------------ */
 

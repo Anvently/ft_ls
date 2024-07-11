@@ -43,7 +43,7 @@ typedef struct s_options
 	bool				human_readable;
 	bool				inode;
 	enum FORMAT_BY		format_by;
-	int					column_max_width;
+	unsigned short		tty_width;
 	enum SORT_BY		sort_by;
 	bool				sort_rev;
 	bool				filter_dir;
@@ -121,7 +121,6 @@ typedef struct s_ls_data {
 	t_size_limits	size_limits;
 	size_t			nbr_files;
 	bool			is_tty;
-	unsigned short	tty_width;
 	unsigned int	nbr_column;
 	unsigned int*	columns_width;
 	// unsigned int*	columns_inode_width;
