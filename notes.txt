@@ -60,3 +60,10 @@ Token element :
 		- print files
 	- a directory
 		
+Column formatting:
+	157 files over 7 columns
+		7 * 22 files + 3 files
+	157 files over 6 columns
+		6 * 26 files + 1 file
+	- 31 + 2
+	- 

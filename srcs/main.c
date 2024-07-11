@@ -20,6 +20,8 @@
 static int	free_all(int status, t_data* data) {
 	ft_lstclear(&data->files, &ls_free_file_info);
 	ft_lstclear(&data->targets, &ls_free_file_info);
+	if (data->columns_width)
+		free(data->columns_width);
 	return (status);
 }
 
@@ -27,8 +29,6 @@ static int	init_data(t_data* data, char** env) {
 	struct winsize w;
 	char*	env_width;
 
-	data->max_column_width = 0;
-	data->min_column_width = UINT_MAX;
 	if (isatty(STDOUT_FILENO)) {
 		data->is_tty = true;
 		if (ioctl(0, TIOCGWINSZ, &w) < 0)

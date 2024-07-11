@@ -145,6 +145,7 @@ void	ft_lstiter(t_list *list, void (*f)(void *));
 t_list	*ft_lstmap(t_list *lst, void *(*f)(void *), void (*del)(void *));
 t_list	*ft_lstmerge(t_list *node, t_list **from);
 void	ft_lstinsert_comp(t_list** list, t_list* node, int (*comp)(void*, void*), bool reverse);
+void	ft_lstpop_front(t_list** list, void (*del)(void *));
 
 ///----------------------- READ ------------------------------
 

@@ -4,7 +4,8 @@ INCLUDES	=	includes/
 SRCS_FOLDER	=	srcs/
 OBJS_FOLDER	=	.objs/
 
-SRCS_FILES	=	main.c error.c options.c parse_args.c file_info.c debug.c
+SRCS_FILES	=	main.c error.c options.c parse_args.c file_info.c debug.c \
+				print.c
 
 OBJS		=	$(addprefix $(OBJS_FOLDER),$(SRCS_FILES:.c=.o))
 SRCS		=	$(addprefix $(SRCS_FOLDER),$(SRCS_FILES))

@@ -242,6 +242,7 @@ int	ls_parse_args(int nbr, char** args, t_data* data) {
 
 	if ((ret = ls_parse_retrieve_options(nbr, args, &data->options)))
 		return (ret);
+	ls_reset_limits(data);
 	for (int i = 0; i < nbr; i++) {
 		if (args[i] == NULL)
 			continue;	

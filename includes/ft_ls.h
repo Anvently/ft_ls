@@ -3,6 +3,7 @@
 
 # include <stdbool.h>
 # include <sys/stat.h>
+# include <stdlib.h>
 
 enum	SORT_BY {SORT_BY_NONE = -1,
 				SORT_BY_ASCII,
@@ -87,27 +88,44 @@ typedef struct s_ls_flag {
 } t_ls_flag;
 
 typedef struct s_ls_file_info {
-	char		filename[255];
-	char*		path;
-	struct stat	stat;
-	size_t		column_width;
+	char			filename[255];
+	char*			path;
+	struct stat		stat;
+	unsigned int	path_w;
+	unsigned int	inode_w;
 } t_file_info;
 
 // typedef struct s_format_data {
 // 	unsigned	int	
 // } t_format;
 
+typedef struct s_size_limits {
+	unsigned int	min_path_w;
+	unsigned int	max_path_w;
+	unsigned int	min_inode_w;
+	unsigned int	max_inode_w;
+	unsigned int	min_date_w;
+	unsigned int	max_date_w;
+	unsigned int	min_user_w;
+	unsigned int	max_user_w;
+	unsigned int	min_group_w;
+	unsigned int	max_group_w;
+	unsigned int	min_size_w;
+	unsigned int	max_size_w;
+} t_size_limits;
+
 typedef struct s_ls_data {
 	t_list*			files;
 	t_list*			targets;
 	t_opts			options;
-	unsigned int	min_column_width;
-	unsigned int	max_column_width;
+	t_size_limits	size_limits;
 	size_t			nbr_files;
 	bool			is_tty;
 	unsigned short	tty_width;
 	unsigned int	nbr_column;
-	unsigned int*	columns_size;
+	unsigned int*	columns_width;
+	// unsigned int*	columns_inode_width;
+	unsigned int	column_len;
 } t_data;
 
 int	ls_error_invalid_flag(const char flag);
@@ -120,7 +138,9 @@ int	ls_error_no_access(const char* path, int errno);
 
 int	ls_parse_args(int nbr, char** args, t_data* data);
 int	ls_retrieve_arg_file(const char* path, t_data* data);
+int	ls_retrieve_dir_files(t_file_info* dir, t_data* data);
 
+void	ls_reset_limits(t_data* data);
 void	ls_free_file_info(void* ptr);
 
 void	ls_print_options(t_opts* options);

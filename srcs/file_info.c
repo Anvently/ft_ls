@@ -129,20 +129,26 @@ static unsigned int	len_nb(size_t len,  unsigned int nb)
 		return (1);
 }
 
+static void	assign_min_max(unsigned int* dest_max, unsigned int* dest_min, unsigned int value) {
+	if (value > *dest_max)
+		*dest_max = value;
+	if (value < *dest_min)
+		*dest_min = value;
+}
+
 /// @brief Calculate the nbr of characters required to print the given
-/// entry in the column format, update ```file_info``` and check the current
+/// entry, update ```file_info``` and check the current
 /// minimum and maximum widths
 /// @param file_info 
 /// @param options 
 /// @return 
 static void	ls_compute_file_width(t_file_info* file_info, t_data* data) {
-	file_info->column_width = (unsigned int)ft_strlen(file_info->path);
-	if (data->options.inode)
-		file_info->column_width += len_nb(0, (unsigned int)file_info->stat.st_ino) + 2;
-	if (file_info->column_width > data->max_column_width)
-		data->max_column_width = file_info->column_width;
-	if (file_info->column_width < data->min_column_width)
-		data->min_column_width = file_info->column_width;
+	file_info->path_w = (unsigned int)ft_strlen(file_info->path);
+	assign_min_max(&data->size_limits.max_path_w, &data->size_limits.min_path_w, file_info->path_w);
+	if (data->options.inode) {
+		file_info->inode_w = len_nb(0, (unsigned int)file_info->stat.st_ino);
+		assign_min_max(&data->size_limits.max_inode_w, &data->size_limits.min_inode_w, file_info->inode_w);
+	}
 }
 
 void	ls_free_file_info(void* ptr) {
@@ -177,9 +183,20 @@ int	ls_retrieve_arg_file(const char* path, t_data* data) {
 		ls_free_file_info(&file_info);
 		return (ERROR_FATAL);
 	}
-	data->nbr_files++;
+	if (destination == &data->files)
+		data->nbr_files++;
 	if (data->options.format_by == FORMAT_BY_COLUMN && destination == &data->files)
-		ls_compute_file_width(file_info, &data);
-	
+		ls_compute_file_width(file_info, data);
+	return (0);
+}
+
+int	ls_retrieve_dir_files(t_file_info* dir, t_data* data) {
+	t_file_info* file_info;
+	int	ret = 0;
+
+	(void) ret;
+	(void) file_info;
+	(void) dir;
+	(void) data;
 	return (0);
 }
