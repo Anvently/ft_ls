@@ -274,6 +274,13 @@ static int	append_recursive_subfolder(t_list* current_node, t_list** dest, t_fil
 	return (0);
 }
 
+static inline bool	check_recursive_subfolder(t_file_info* dir_info) {
+	if (S_ISDIR(dir_info->stat.stx_mode) == false || ft_strcmp(dir_info->filename, ".") == 0
+		|| ft_strcmp(dir_info->filename, "..") == 0)
+		return (false);
+	return (true);
+}
+
 /// @brief Read every files in dir and add them to files list.
 /// If recursive flag is enabled, also adds folder as the next target
 /// @param dir_info 
@@ -305,7 +312,7 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 		if ((ret = push_file_info(file_info, &data->files, &data->options)))
 			break;
 		data->nbr_files++;
-		if (data->options.recursive && S_ISDIR(file_info->stat.stx_mode)
+		if (data->options.recursive && check_recursive_subfolder(file_info)
 			&& (ret = append_recursive_subfolder(current_node, &add_targets, file_info, &data->options)))
 			break;
 	}
