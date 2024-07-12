@@ -33,7 +33,7 @@ static t_ls_flag options_map[] = {
 	},
 	[OPT_COLOR]			= (t_ls_flag) {
 		.long_id = "color",
-		.has_param = true,
+		.arg = ARG_OPTIONNAL,
 		.handler = option_set_color
 	},
 	[OPT_FORMAT_ATIME]		= (t_ls_flag) {
@@ -42,7 +42,7 @@ static t_ls_flag options_map[] = {
 	},
 	[OPT_TIME]			= (t_ls_flag) {
 		.long_id = "time",
-		.has_param = true,
+		.arg = ARG_REQUIRED,
 		.handler = option_argument_time
 	},
 	[OPT_INODE]			= (t_ls_flag) {
@@ -57,7 +57,7 @@ static t_ls_flag options_map[] = {
 	[OPT_WIDTH] 		= (t_ls_flag) {
 		.short_id = 'w',
 		.long_id = "width",
-		.has_param = true,
+		.arg = ARG_REQUIRED,
 		.handler = option_set_column_width
 	},
 	[OPT_FLT_ALL] 		= (t_ls_flag) {
@@ -94,7 +94,7 @@ static t_ls_flag options_map[] = {
 	},
 	[OPT_SORT] 			= (t_ls_flag) {
 		.long_id = "sort",
-		.has_param = true,
+		.arg = ARG_REQUIRED,
 		.handler = option_argument_sort
 	},
 	[OPT_RECURSIVE] 	= (t_ls_flag) {
@@ -117,7 +117,7 @@ static t_ls_flag options_map[] = {
 /// @param options 
 /// @return ```2``` if unknown flag. ```-1``` if no error but what's remaining
 /// in arg should be considered as option argument and thus ignored.
-static int	ls_parse_arg_short(char* option, t_opts *options) {
+static int	ls_parse_arg_short(char** next_arg, char* option, t_opts *options) {
 	t_ls_flag*	flag_info = NULL;
 	int			ret = 0;
 
@@ -131,9 +131,17 @@ static int	ls_parse_arg_short(char* option, t_opts *options) {
 	}
 	if (flag_info == NULL)
 		return (ls_error_invalid_flag(*option));
-	if (flag_info->has_param) {
-		if (option[1] == '\0')
-			return (ls_error_flag_missing_argument(*option));
+	if (flag_info->arg) {
+		if (option[1] == '\0') {
+			if (flag_info->arg == ARG_REQUIRED) {
+				if (next_arg == NULL)
+					return (ls_error_flag_missing_argument(*option));
+				ret = (*flag_info->handler)(options, *next_arg);
+				*next_arg = NULL;
+				return (ret);
+			}
+			ret = (*flag_info->handler)(options, NULL);
+		}
 		ret = (*flag_info->handler)(options, option + 1);
 		if (ret)
 			return (ret);
@@ -142,11 +150,11 @@ static int	ls_parse_arg_short(char* option, t_opts *options) {
 	return ((*flag_info->handler)(options, NULL));
 }
 
-static int	ls_parse_flag_list(char* arg, t_opts* options) {
+static int	ls_parse_flag_list(char** next_arg, char* arg, t_opts* options) {
 	int	ret = 0;
 
 	for (int i = 0; arg[i]; i++) {
-		ret = ls_parse_arg_short(arg + i, options);
+		ret = ls_parse_arg_short(next_arg, arg + i, options);
 		if (ret > 0)
 			return (ERROR_INPUT);
 		if (ret < 0)
@@ -155,13 +163,30 @@ static int	ls_parse_flag_list(char* arg, t_opts* options) {
 	return (0);
 }
 
+static int	ls_option_long_handle_arg(char** next_arg, t_ls_flag* flag_info, char* option, size_t end, t_opts* options) {
+	int	ret = 0;
+
+	if (option[end] == '\0') {
+		if (flag_info->arg == ARG_REQUIRED) {
+			if (next_arg == NULL)
+				return (ls_error_option_missing_argument(flag_info->long_id));
+			ret = (*flag_info->handler)(options, *next_arg);
+			*next_arg = NULL;
+			return (ret);
+		}
+		return ((*flag_info->handler)(options, NULL));
+	}
+	if (flag_info->arg == ARG_NONE)
+		return (ls_error_option_extra_argument(option, end));
+	return ((*flag_info->handler)(options, option + end + 1));
+}
+
 /// @brief 
 /// @param arg 
 /// @param options 
 /// @return ```-1``` if allocation error.
 /// ```2``` of input error
-static int	ls_parse_option_long(char* arg, t_opts* options) {
-	t_ls_flag*	flag_info = NULL;
+static int	ls_parse_option_long(char** next_arg, char* arg, t_opts* options) {
 	t_list*		matches = NULL, *node;
 	size_t		end;
 	int			ret = 0;
@@ -183,20 +208,8 @@ static int	ls_parse_option_long(char* arg, t_opts* options) {
 		ret = ls_error_invalid_option(arg);
 	else if (matches->next != NULL)
 		ret = ls_error_ambiguous_option(arg, matches);
-	else {
-		flag_info = matches->content;
-		if (flag_info->has_param) {
-			if (arg[end] == '\0' || arg[end + 1] == '\0')
-				ret = ls_error_option_missing_argument(flag_info->long_id);
-			else
-				ret = (*flag_info->handler)(options, arg + end + 1);
-		} else {
-			if (arg[end] != '\0')
-				ret = ls_error_option_extra_argument(arg, end);
-			else
-				ret = (*flag_info->handler)(options, NULL);
-		}
-	}
+	else
+		ret = ls_option_long_handle_arg(next_arg, (t_ls_flag*)matches->content, arg, end, options);
 	ft_lstclear(&matches, NULL);
 	return (ret);
 }
@@ -208,19 +221,21 @@ static int	ls_parse_option_long(char* arg, t_opts* options) {
 /// @param options 
 /// @return ```2``` if input errors
 static int	ls_parse_retrieve_options(int nbr, char** args, t_opts* options) {
-	int	ret = 0;
+	int		ret = 0;
 
 	for (int i = 0; i < nbr; i++) {
+		if (args[i] == NULL)
+			continue;
 		if (args[i][0] == '-') {
 			if (args[i][1] == '-' && (ft_isspace(args[i][2]) || !args[i][2])) {
 				args[i] = NULL;	
 				break;
 			}
 			else if (args[i][1] == '-') {
-				if ((ret = ls_parse_option_long(args[i] + 2, options)))
+				if ((ret = ls_parse_option_long((i + 1 == nbr ? NULL : &args[i + 1]), args[i] + 2, options)))
 					return (ret);
 			} else {
-				if ((ret = ls_parse_flag_list(args[i] + 1, options)))
+				if ((ret = ls_parse_flag_list((i + 1 == nbr ? NULL : &args[i + 1]), args[i] + 1, options)))
 					return (ret);
 			}
 			args[i] = NULL;

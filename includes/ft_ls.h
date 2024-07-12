@@ -9,7 +9,8 @@ enum	SORT_BY {SORT_BY_NONE = -1,
 				SORT_BY_ASCII,
 				SORT_BY_ALPHA,
 				SORT_BY_TIME,
-				SORT_BY_SIZE};
+				SORT_BY_SIZE,
+				SIZE_SORT_BY};
 
 enum	TIME_BY {TIME_BY_MTIME = 0, //Modification time
 				TIME_BY_CTIME, //Change time
@@ -79,12 +80,17 @@ enum	OPTIONS {
 			NBR_OPTIONS
 };
 
+enum	ARG_TYPE {
+			ARG_NONE,
+			ARG_OPTIONNAL,
+			ARG_REQUIRED
+};
 
 typedef struct s_ls_flag {
-	char	short_id;
-	char*	long_id;
-	bool	has_param;
-	int		(*handler)(t_opts*, char*);
+	char			short_id;
+	char*			long_id;
+	enum ARG_TYPE	arg;
+	int				(*handler)(t_opts*, char*);
 } t_ls_flag;
 
 typedef struct s_ls_file_info {
@@ -134,6 +140,9 @@ int	ls_error_flag_missing_argument(const char option);
 int	ls_error_option_missing_argument(const char* option);
 int	ls_error_option_extra_argument(const char* option, int end);
 int	ls_error_no_access(const char* path, int errno);
+int	ls_error_invalid_width(const char* width);
+int	ls_error_invalid_argument(const char* option, const char* arg, const char*** valids);
+int	ls_error_ambiguous_argument(const char* option, const char* arg, const char*** valids);
 
 int	ls_parse_args(int nbr, char** args, t_data* data);
 int	ls_retrieve_arg_file(const char* path, t_data* data);

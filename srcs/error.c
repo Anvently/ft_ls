@@ -43,3 +43,34 @@ int	ls_error_no_access(const char* path, int errno) {
 	ft_dprintf(2, "ft_ls: cannot access '%s': %s\n", path, strerror(errno));
 	return (ERROR_SYS);
 }
+
+int	ls_error_invalid_width(const char* width) {
+	ft_dprintf(2, "ft_ls: invalid line width: ‘%s’\n", width);
+	return (ERROR_INPUT);
+}
+
+static int	print_valid_arguments(const char*** valids) {
+	if (!valids || !*valids)
+		return (0);
+	ft_dprintf(2, "Valid arguments are:\n");
+	for (int i = 0; valids[i]; i++) {
+		write(2, "  - ", 4);
+		for (int j = 0; valids[i][j]; j++) {
+			ft_dprintf(2, "‘%s’%s", valids[i][j], (valids[i][j + 1] ? ", " : ""));
+		}
+		write(2, "\n", 1);
+	}
+	return (0);
+}
+
+int	ls_error_invalid_argument(const char* option, const char* arg, const char*** valids) {
+	ft_dprintf(2, "ft_ls: invalid argument ‘%s’ for ‘--%s’\n", arg, option);
+	print_valid_arguments(valids);
+	return (ERROR_INPUT);
+}
+
+int	ls_error_ambiguous_argument(const char* option, const char* arg, const char*** valids) {
+	ft_dprintf(2, "ft_ls: ambiguous argument ‘%s’ for ‘--%s’\n", arg, option);
+	print_valid_arguments(valids);
+	return (ERROR_INPUT);
+}
