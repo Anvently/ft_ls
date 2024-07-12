@@ -60,10 +60,11 @@ Token element :
 		- print files
 	- a directory
 		
-Column formatting:
-	157 files over 7 columns
-		7 * 22 files + 3 files
-	157 files over 6 columns
-		6 * 26 files + 1 file
-	- 31 + 2
-	- 
+TODO:
+	- sorting not really working
+	- ls doesn't do padding when printing last column
+	- with sorting=NONE, maybe we need to print straight away instead of adding
+		to file list ?
+	- retrieve dir files
+	- add colors
+	- implement long listing
