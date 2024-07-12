@@ -17,7 +17,7 @@ enum	TIME_BY {TIME_BY_MTIME = 0, //Modification time
 				TIME_BY_ATIME, //Acces time
 				TIME_BY_BTIME}; //Creation time
 
-enum	COLORIZE {COLOR_NONE = -1,
+enum	COLORIZE {COLOR_NONE = 0,
 				COLOR_AUTO, //Colorize if stdout is a tty
 				COLOR_ALWAYS}; //Always colorize
 
@@ -52,6 +52,7 @@ typedef struct s_options
 	bool				recursive;
 	bool				colorize;
 	enum FILTER_FILE	filter;
+	bool				is_tty;
 } t_opts;
 
 typedef struct s_list t_list;
@@ -126,7 +127,6 @@ typedef struct s_ls_data {
 	t_opts			options;
 	t_size_limits	size_limits;
 	size_t			nbr_files;
-	bool			is_tty;
 	unsigned int	nbr_column;
 	unsigned int*	columns_width;
 	// unsigned int*	columns_inode_width;

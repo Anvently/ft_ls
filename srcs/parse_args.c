@@ -3,7 +3,7 @@
 
 int	option_set_long_listing(t_opts* options, char*);
 int	option_set_human_readable(t_opts* options, char*);
-int	option_set_color(t_opts* options, char* arg);
+int	option_argument_color(t_opts* options, char* arg);
 int	option_set_access_time(t_opts* options, char*);
 int	option_set_inode(t_opts* options, char*);
 int	option_set_row_format(t_opts* options, char*);
@@ -34,7 +34,7 @@ static t_ls_flag options_map[] = {
 	[OPT_COLOR]			= (t_ls_flag) {
 		.long_id = "color",
 		.arg = ARG_OPTIONNAL,
-		.handler = option_set_color
+		.handler = option_argument_color
 	},
 	[OPT_FORMAT_ATIME]		= (t_ls_flag) {
 		.short_id = 'u',

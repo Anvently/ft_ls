@@ -31,7 +31,7 @@ static int	init_data(t_data* data, char** env) {
 	char*	env_width;
 
 	if (isatty(STDOUT_FILENO)) {
-		data->is_tty = true;
+		data->options.is_tty = true;
 		if (ioctl(0, TIOCGWINSZ, &w) < 0)
 			return (ERROR_FATAL);
 		data->options.tty_width = w.ws_col;

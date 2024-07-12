@@ -16,7 +16,7 @@ void	ls_print_options(t_opts* options) {
 			ft_printf("line\n");
 			break;
 	}
-	ft_printf("column max width: %d\n", options->column_max_width);
+	ft_printf("column max width: %d\n", options->tty_width);
 	ft_printf("sort by: ");
 	switch (options->sort_by)
 	{
@@ -38,6 +38,9 @@ void	ls_print_options(t_opts* options) {
 
 		case SORT_BY_SIZE:
 			ft_printf("size\n");
+			break;
+
+		default:
 			break;
 	}
 	ft_printf("reverse sort: %d\n", options->sort_rev);

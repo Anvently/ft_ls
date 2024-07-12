@@ -123,6 +123,9 @@ static int	push_file_info(t_file_info* file_info, t_list** dest, t_opts* options
 		case SORT_BY_SIZE:
 			ft_lstinsert_comp(dest, node, &comp_size, options->sort_rev);
 			break;
+		
+		default:
+			break;
 	}
 	return (0);
 }
