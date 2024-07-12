@@ -163,7 +163,7 @@ int	ls_print(t_data* data) {
 		return (ERROR_FATAL);
 	while (data->targets) {
 		clear_files(data);
-		res = ls_retrieve_dir_files((t_file_info*)data->targets->content, data);
+		res = ls_retrieve_dir_files(data->targets, data);
 		if (res < 0)
 			return (ERROR_FATAL);
 		else if (res > 0)

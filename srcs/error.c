@@ -44,6 +44,11 @@ int	ls_error_no_access(const char* path, int errno) {
 	return (ERROR_SYS);
 }
 
+int	ls_error_open(const char* path, int errno) {
+	ft_dprintf(2, "ft_ls: cannot open directory '%s': %s\n", path, strerror(errno));
+	return (ERROR_SYS);
+};
+
 int	ls_error_invalid_width(const char* width) {
 	ft_dprintf(2, "ft_ls: invalid line width: ‘%s’\n", width);
 	return (ERROR_INPUT);

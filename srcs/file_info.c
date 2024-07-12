@@ -6,7 +6,10 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <time.h>
+#include <dirent.h>
 #include <sys/sysmacros.h>
+#include <string.h>
+#include <statx.h>
 
 // /// @brief 
 // /// @param file_stat 
@@ -15,26 +18,6 @@
 // bool	ls_check_filters(const char* path, t_stat* file_stat, t_opts* options) {
 	
 // }
-
-/// @brief Return an allocated ```file_info``` struct
-/// @param path 
-/// @param file_info 
-/// @return ```1``` if can't access to path
-/// ```-1``` if allocation error
-static int	get_file_info(const char* path, t_file_info** file_info) {
-	*file_info = ft_calloc(1, sizeof(t_file_info));
-	if (*file_info == NULL)
-		return (ERROR_FATAL);
-	if (stat(path, &(*file_info)->stat) < 0) {
-		free(*file_info);
-		return (ls_error_no_access(path, errno));
-	}
-	if (((*file_info)->path = ft_strdup(path)) == NULL) {
-		free(*file_info);
-		return (ERROR_FATAL);
-	}
-	return (0);
-}
 
 static int	comp_ctime(void* lhd, void* rhd) {
 	if (((t_file_info*)lhd)->stat.st_ctime <= ((t_file_info*)rhd)->stat.st_ctime)
@@ -167,9 +150,75 @@ void	ls_free_file_info(void* ptr) {
 
 	if (!file_info || file_info == NULL)
 		return ;
-	if (file_info->path)
+	if (file_info->path && file_info->path != &file_info->filename[0])
 		free(file_info->path);
 	free(file_info);
+}
+
+static bool	check_name_filter(struct dirent* dir_entry, t_opts* options) {
+	switch (options->filter)
+	{
+		case FILTER_ALL:
+			return (true);
+		
+		case FILTER_DEFAULT:
+			if (dir_entry->d_name[0] == '.')
+				return (false);
+			return (true);
+
+		case FILTER_SPECIAL:
+			if (ft_strcmp(dir_entry->d_name, ".") == 0 || ft_strcmp(dir_entry->d_name, "..") == 0)
+				return (false);
+			return (true);
+
+		default:
+			return (true);
+	}
+}
+
+/// @brief Return an allocated ```file_info``` struct
+/// @param path 
+/// @param file_info 
+/// @return ```1``` if can't access to path
+/// ```-1``` if allocation error
+static int	get_file_info(const char* path, t_file_info** file_info) {
+	*file_info = ft_calloc(1, sizeof(t_file_info));
+	if (*file_info == NULL)
+		return (ERROR_FATAL);
+	if (stat(path, &(*file_info)->stat) < 0) {
+		free(*file_info);
+		return (ls_error_no_access(path, errno));
+	}
+	if (((*file_info)->path = ft_strdup(path)) == NULL) {
+		free(*file_info);
+		return (ERROR_FATAL);
+	}
+	return (0);
+}
+
+/// @brief Return allocated ```file_info``` struct of a file from it's directory
+/// entry. If filter set in option, check name. Only call stat() if required by the options.
+/// @param dir_path used to build the full path to the file
+/// @param dir_entry use to retrieve dir_type and inode
+/// @param file_info destination pointer.
+/// @return ```1``` if can't access to path
+/// ```-1``` if allocation error
+static int	get_file_info_from_dir(int dir_fd, struct dirent* dir_entry, t_file_info** file_info, t_data* data) {
+	*file_info = ft_calloc(1, sizeof(t_file_info));
+	if (*file_info == NULL)
+		return (ERROR_FATAL);
+	ft_strlcpy(&(*file_info)->filename[0], &dir_entry->d_name[0], 256);
+	(*file_info)->path = &(*file_info)->filename[0];
+	if (data->options.sort_by != SORT_BY_NONE || data->options.long_listing) {
+		if (statx(dir_fd, &dir_entry->d_name[0], 0, STATX_ALL, &(*file_info)->stat) < 0) {
+			free(*file_info);
+			return (ERROR_SYS);
+		}
+	} else {
+		(*file_info)->stat.st_ino = dir_entry->d_ino;
+		(*file_info)->stat.st_mode = DTTOIF(dir_entry->d_type);
+	}
+	return (0);
 }
 
 /// @brief Given an arg, either add it to :
@@ -201,13 +250,74 @@ int	ls_retrieve_arg_file(const char* path, t_data* data) {
 	return (0);
 }
 
-int	ls_retrieve_dir_files(t_file_info* dir, t_data* data) {
-	t_file_info* file_info;
-	int	ret = 0;
+static int	append_recursive_subfolder(t_list* current_node, t_list** dest, t_file_info* dir_info, t_opts* options) {
+	t_file_info*	target_info;
+	size_t			parent_path_len, dir_name_len;
 
-	(void) ret;
-	(void) file_info;
-	(void) dir;
-	(void) data;
+	target_info = malloc(sizeof(t_file_info));
+	if (target_info == NULL)
+		return (ERROR_FATAL);
+	ft_memcpy(target_info, dir_info, sizeof(t_file_info));
+	parent_path_len = ft_strlen(((t_file_info*)current_node->content)->path);
+	dir_name_len = ft_strlen(&dir_info->filename[0]);
+	target_info->path = malloc(parent_path_len + dir_name_len + 2);
+	if (target_info->path == NULL) {
+		free(target_info);
+		return (ERROR_FATAL);
+	}
+	ft_strlcpy(target_info->path, ((t_file_info*)current_node->content)->path, parent_path_len + 1);
+	ft_strlcpy(target_info->path + parent_path_len, "/", 2);
+	ft_strlcpy(target_info->path + parent_path_len + 1, &dir_info->filename[0], parent_path_len + dir_name_len + 2);
+	if (push_file_info(target_info, dest, options)) {
+		ls_free_file_info(target_info);
+		return (ERROR_FATAL);
+	}
+	return (0);
+}
+
+/// @brief Read every files in dir and add them to files list.
+/// If recursive flag is enabled, also adds folder as the next target
+/// @param dir_info 
+/// @param data 
+/// @return ```1``` if a directory could not be opened
+/// ```-1``` if allocation error.
+int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
+	t_file_info*	dir_info = (t_file_info*)current_node->content;
+	t_file_info		*file_info = NULL;
+	t_list*			add_targets = NULL;
+	DIR*			dir = NULL;
+	struct dirent*	dir_entry = NULL;
+	int				ret = 0, res, dir_fd = -1;
+
+	dir = opendir(dir_info->path);
+	if (dir == NULL)
+		return (ls_error_open(dir_info->path, errno));
+	dir_fd = dirfd(dir);
+	while (dir_fd > 0 && (dir_entry = readdir(dir))) {
+		if (data->options.filter != FILTER_ALL && check_name_filter(dir_entry, &data->options) == false)
+			continue;
+		if ((res = get_file_info_from_dir(dir_fd, dir_entry, &file_info, data))) {
+			ret = res;
+			if (res < 0)
+				break;
+		}
+		if (data->options.format_by == FORMAT_BY_COLUMN)
+			ls_compute_file_width(file_info, data);
+		if ((ret = push_file_info(file_info, &data->files, &data->options)))
+			break;
+		data->nbr_files++;
+		if (data->options.recursive && S_ISDIR(file_info->stat.st_mode)
+			&& (ret = append_recursive_subfolder(current_node, &add_targets, file_info, &data->options)))
+			break;
+	}
+	if (ret < 0 && file_info)
+		ls_free_file_info(file_info);
+	else if (errno && ret >= 0) {
+		ft_dprintf(2, "Unknown exception: %d: %s", errno, strerror(errno));
+		ret = ERROR_FATAL;
+	}
+	if (add_targets != NULL)
+		ft_lstmerge(current_node, &add_targets);
+	closedir(dir);
 	return (0);
 }

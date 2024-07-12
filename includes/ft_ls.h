@@ -28,8 +28,8 @@ enum	FORMAT_BY {
 
 enum	FILTER_FILE {
 			FILTER_DEFAULT = 0,
-			FILTER_SPECIAL,
-			FILTER_ALL
+			FILTER_SPECIAL, //print hidden but hide . and ..
+			FILTER_ALL //print all
 };
 
 enum	LS_ERRORS {
@@ -140,13 +140,14 @@ int	ls_error_flag_missing_argument(const char option);
 int	ls_error_option_missing_argument(const char* option);
 int	ls_error_option_extra_argument(const char* option, int end);
 int	ls_error_no_access(const char* path, int errno);
+int	ls_error_open(const char* path, int errno);
 int	ls_error_invalid_width(const char* width);
 int	ls_error_invalid_argument(const char* option, const char* arg, const char*** valids);
 int	ls_error_ambiguous_argument(const char* option, const char* arg, const char*** valids);
 
 int	ls_parse_args(int nbr, char** args, t_data* data);
 int	ls_retrieve_arg_file(const char* path, t_data* data);
-int	ls_retrieve_dir_files(t_file_info* dir, t_data* data);
+int	ls_retrieve_dir_files(t_list* current_node, t_data* data);
 
 void	ls_reset_limits(t_data* data);
 void	ls_free_file_info(void* ptr);

@@ -17,7 +17,6 @@
 // 	return (0);
 // }
 
-
 static int	free_all(int status, t_data* data) {
 	ft_lstclear(&data->files, &ls_free_file_info);
 	ft_lstclear(&data->targets, &ls_free_file_info);
