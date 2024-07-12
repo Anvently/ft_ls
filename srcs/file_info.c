@@ -9,7 +9,6 @@
 #include <dirent.h>
 #include <sys/sysmacros.h>
 #include <string.h>
-#include <statx.h>
 
 // /// @brief 
 // /// @param file_stat 
@@ -20,19 +19,19 @@
 // }
 
 static int	comp_ctime(void* lhd, void* rhd) {
-	if (((t_file_info*)lhd)->stat.st_ctime <= ((t_file_info*)rhd)->stat.st_ctime)
+	if (((t_file_info*)lhd)->stat.stx_ctime.tv_sec <= ((t_file_info*)rhd)->stat.stx_ctime.tv_sec)
 		return (-1);
 	return (1);
 }
 
 static int	comp_mtime(void* lhd, void* rhd) {
-	if (((t_file_info*)lhd)->stat.st_mtime <= ((t_file_info*)rhd)->stat.st_mtime)
+	if (((t_file_info*)lhd)->stat.stx_mtime.tv_sec <= ((t_file_info*)rhd)->stat.stx_mtime.tv_sec)
 		return (-1);
 	return (1);
 }
 
 static int	comp_atime(void* lhd, void* rhd) {
-	if (((t_file_info*)lhd)->stat.st_atime <= ((t_file_info*)rhd)->stat.st_atime)
+	if (((t_file_info*)lhd)->stat.stx_atime.tv_sec <= ((t_file_info*)rhd)->stat.stx_atime.tv_sec)
 		return (-1);
 	return (1);
 }
@@ -46,7 +45,7 @@ static int	comp_alpha(void* lhd, void* rhd) {
 }
 
 static int	comp_size(void* lhd, void* rhd) {
-	if (((t_file_info*)lhd)->stat.st_size <= ((t_file_info*)rhd)->stat.st_size)
+	if (((t_file_info*)lhd)->stat.stx_size <= ((t_file_info*)rhd)->stat.stx_size)
 		return (-1);
 	return (1);
 }
@@ -140,7 +139,7 @@ static void	ls_compute_file_width(t_file_info* file_info, t_data* data) {
 	file_info->path_w = (unsigned int)ft_strlen(file_info->path);
 	assign_min_max(&data->size_limits.max_path_w, &data->size_limits.min_path_w, file_info->path_w);
 	if (data->options.inode) {
-		file_info->inode_w = len_nb(0, (unsigned int)file_info->stat.st_ino);
+		file_info->inode_w = len_nb(0, (unsigned int)file_info->stat.stx_ino);
 		assign_min_max(&data->size_limits.max_inode_w, &data->size_limits.min_inode_w, file_info->inode_w);
 	}
 }
@@ -185,7 +184,7 @@ static int	get_file_info(const char* path, t_file_info** file_info) {
 	*file_info = ft_calloc(1, sizeof(t_file_info));
 	if (*file_info == NULL)
 		return (ERROR_FATAL);
-	if (stat(path, &(*file_info)->stat) < 0) {
+	if (statx(AT_FDCWD, path, 0, STATX_ALL, &(*file_info)->stat) < 0) {
 		free(*file_info);
 		return (ls_error_no_access(path, errno));
 	}
@@ -215,8 +214,8 @@ static int	get_file_info_from_dir(int dir_fd, struct dirent* dir_entry, t_file_i
 			return (ERROR_SYS);
 		}
 	} else {
-		(*file_info)->stat.st_ino = dir_entry->d_ino;
-		(*file_info)->stat.st_mode = DTTOIF(dir_entry->d_type);
+		(*file_info)->stat.stx_ino = dir_entry->d_ino;
+		(*file_info)->stat.stx_mode = DTTOIF(dir_entry->d_type);
 	}
 	return (0);
 }
@@ -235,7 +234,7 @@ int	ls_retrieve_arg_file(const char* path, t_data* data) {
 	
 	if ((ret = get_file_info(path, &file_info)))
 		return (ret);
-	if (S_ISDIR(file_info->stat.st_mode) && data->options.filter_dir == false)
+	if (S_ISDIR(file_info->stat.stx_mode) && data->options.filter_dir == false)
 		destination = &data->targets;
 	else
 		destination = &data->files;
@@ -306,7 +305,7 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 		if ((ret = push_file_info(file_info, &data->files, &data->options)))
 			break;
 		data->nbr_files++;
-		if (data->options.recursive && S_ISDIR(file_info->stat.st_mode)
+		if (data->options.recursive && S_ISDIR(file_info->stat.stx_mode)
 			&& (ret = append_recursive_subfolder(current_node, &add_targets, file_info, &data->options)))
 			break;
 	}

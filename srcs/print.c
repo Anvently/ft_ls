@@ -61,7 +61,7 @@ static int	compute_columns(t_data* data) {
 
 static int	print_file_short(t_file_info* file_info, t_opts* options, unsigned int path_w, unsigned int inode_w) {
 	if (options->inode) {
-		if (ft_printf("%-*u %-*s", inode_w, (unsigned int) file_info->stat.st_ino, path_w, file_info->path) < 0)
+		if (ft_printf("%-*u %-*s", inode_w, (unsigned int) file_info->stat.stx_ino, path_w, file_info->path) < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}

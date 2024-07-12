@@ -3,6 +3,8 @@
 
 # include <stdbool.h>
 # include <sys/stat.h>
+# include <statx.h>
+// # include <statx-generic.h>
 # include <stdlib.h>
 
 enum	SORT_BY {SORT_BY_NONE = -1,
@@ -97,7 +99,7 @@ typedef struct s_ls_flag {
 typedef struct s_ls_file_info {
 	char			filename[255];
 	char*			path;
-	struct stat		stat;
+	struct statx	stat;
 	unsigned int	path_w;
 	unsigned int	inode_w;
 } t_file_info;
