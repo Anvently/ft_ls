@@ -10,10 +10,11 @@
 
 
 enum	SORT_BY {SORT_BY_NONE = -1,
-				SORT_BY_ASCII,
 				SORT_BY_ALPHA,
+				SORT_BY_ASCII,
 				SORT_BY_TIME,
 				SORT_BY_SIZE,
+				SORT_BY_EXTENSION,
 				SIZE_SORT_BY};
 
 enum	TIME_BY {TIME_BY_MTIME = 0, //Modification time
@@ -99,7 +100,7 @@ typedef struct s_ls_flag {
 } t_ls_flag;
 
 typedef struct s_ls_file_info {
-	char			filename[255];
+	char			filename[256];
 	char*			path;
 	struct statx	stat;
 	unsigned int	path_w;

@@ -34,6 +34,16 @@ static const char*	extract_filename(const char* path) {
 	return (start);
 }
 
+/// @brief Return path extension
+/// @param path 
+/// @return ```NULL``` if no extension, empty string if trailing dot
+static const char*	extract_extension(const char* path) {
+	const char* start = ft_strrchr(path, '.');
+	if (start == NULL)
+		return (NULL);
+	return (start + 1);
+}
+
 static int	comp_ascii(void* lhd, void* rhd) {
 	return (ft_strcmp(((t_file_info*)lhd)->path, ((t_file_info*)rhd)->path));
 }
@@ -43,6 +53,26 @@ static int	comp_alpha(void* lhd, void* rhd) {
 	if (diff)
 		return (diff);
 	return (comp_ascii(lhd, rhd));
+}
+
+static int	comp_extension(void* lhd, void* rhd) {
+	const char	*lext = extract_extension(((t_file_info*)lhd)->path);
+	const char	*rext = extract_extension(((t_file_info*)rhd)->path);
+	// ft_printf("for %s and %s => comparing %s and %s\n", ((t_file_info*)lhd)->path, ((t_file_info*)rhd)->path, lext, rext);
+	if (lext == NULL) {
+		if (rext == NULL)
+			return (comp_alpha(lhd, rhd));
+		return (-1);
+	}
+	if (rext == NULL)
+		return (1);
+	int	diff = ft_stricmp(lext, rext);
+	if (diff == 0) {
+		diff = ft_strcmp(lext, rext);
+		if (diff == 0)
+			return (comp_alpha(lhd, rhd));
+	}
+	return (diff);
 }
 
 static int	comp_size(void* lhd, void* rhd) {
@@ -168,6 +198,10 @@ static int	push_file_info(t_file_info* file_info, t_list** dest, t_opts* options
 			ft_lstinsert_comp(dest, node, &comp_size, options->sort_rev);
 			break;
 		
+		case SORT_BY_EXTENSION:
+			ft_lstinsert_comp(dest, node, &comp_extension, options->sort_rev);
+			break;
+
 		default:
 			break;
 	}

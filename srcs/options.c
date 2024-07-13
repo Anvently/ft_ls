@@ -133,11 +133,12 @@ int	option_set_alias_f(t_opts* options, char* arg) {
 int	option_argument_sort(t_opts* options, char* arg) {
 	int	ret = 0;
 	static const char*	arg_none[] = {"none", NULL};
-	static const char*	arg_ascii[] = {"ascii", NULL};
 	static const char*	arg_alpha[] = {"alpha", NULL};
+	static const char*	arg_ascii[] = {"ascii", NULL};
 	static const char*	arg_time[] = {"time", NULL};
 	static const char*	arg_size[] = {"size", NULL};
-	static const char**	valids[] = {arg_none, arg_ascii, arg_alpha, arg_time, arg_size, NULL};
+	static const char*	arg_extension[] = {"extension", NULL};
+	static const char**	valids[] = {arg_none, arg_ascii, arg_alpha, arg_time, arg_size, arg_extension, NULL};
 	switch ((ret = option_argument(arg, valids)))
 	{	
 		case -1:
