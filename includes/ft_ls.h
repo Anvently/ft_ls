@@ -1,11 +1,13 @@
 #ifndef FT_LS_H
 # define FT_LS_H
 
+// # define _GNU_SOURCE
 # include <stdbool.h>
 # include <sys/stat.h>
 # include <statx.h>
 // # include <statx-generic.h>
 # include <stdlib.h>
+
 
 enum	SORT_BY {SORT_BY_NONE = -1,
 				SORT_BY_ASCII,

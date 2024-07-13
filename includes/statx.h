@@ -98,7 +98,7 @@ struct statx {
   #endif
 #endif
 
-#define statx(a,b,c,d,e) syscall(__NR_statx,(a),(b),(c),(d),(e))
+#define statx(dirfd, pathname, flags, mask, dest) syscall(__NR_statx,(dirfd),(pathname),(flags),(mask),(dest))
 
 
 #endif 

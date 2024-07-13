@@ -129,6 +129,7 @@ static int	print_files(t_data* data, t_file_info* dir) {
 		return (ERROR_FATAL);
 	if (print_column(data))
 		return (ERROR_FATAL);
+	
 	return (0);
 }
 
@@ -169,6 +170,8 @@ int	ls_print(t_data* data) {
 		else if (res > 0)
 			ret = 1;
 		print_files(data, (nbr_iter || data->targets->next) ? (t_file_info*)data->targets->content : NULL);
+		if (data->targets->next)
+			write(1, "\n", 1);
 		ft_lstpop_front(&data->targets, &ls_free_file_info);
 		nbr_iter++;
 	}

@@ -63,6 +63,6 @@ int	main(int argc, char **argv, char **env) {
 	if (!data.files && !data.targets && (ret = ls_retrieve_arg_file(".", &data)))
 		return (free_all(ret, &data));
 	ret = ls_print(&data);
-	ls_print_options(&data.options);
+	// ls_print_options(&data.options);
 	return (free_all(ret, &data));
 }

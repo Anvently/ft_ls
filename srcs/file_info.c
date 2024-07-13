@@ -18,22 +18,20 @@
 	
 // }
 
-static int	comp_ctime(void* lhd, void* rhd) {
-	if (((t_file_info*)lhd)->stat.stx_ctime.tv_sec <= ((t_file_info*)rhd)->stat.stx_ctime.tv_sec)
-		return (-1);
-	return (1);
-}
-
-static int	comp_mtime(void* lhd, void* rhd) {
-	if (((t_file_info*)lhd)->stat.stx_mtime.tv_sec <= ((t_file_info*)rhd)->stat.stx_mtime.tv_sec)
-		return (-1);
-	return (1);
-}
-
-static int	comp_atime(void* lhd, void* rhd) {
-	if (((t_file_info*)lhd)->stat.stx_atime.tv_sec <= ((t_file_info*)rhd)->stat.stx_atime.tv_sec)
-		return (-1);
-	return (1);
+/// @brief Return the filename part of a path, including the extension, ignore 
+/// leading ```.``` at the beginning of the filename.
+/// @param path 
+/// @return 
+static const char*	extract_filename(const char* path) {
+	const char*	start = ft_strrchr(path, '/');
+	if (start++ == NULL)
+		start = path;
+	while (*start == '.')
+		start++;
+	if (*start == '\0')
+		return (path);
+	// ft_printf("start = %s\n", start);
+	return (start);
 }
 
 static int	comp_ascii(void* lhd, void* rhd) {
@@ -41,14 +39,78 @@ static int	comp_ascii(void* lhd, void* rhd) {
 }
 
 static int	comp_alpha(void* lhd, void* rhd) {
-	return (ft_stricmp(((t_file_info*)lhd)->path, ((t_file_info*)rhd)->path));
+	int	diff = ft_stricmp(extract_filename(((t_file_info*)lhd)->path), extract_filename(((t_file_info*)rhd)->path));
+	if (diff)
+		return (diff);
+	return (comp_ascii(lhd, rhd));
 }
 
 static int	comp_size(void* lhd, void* rhd) {
-	if (((t_file_info*)lhd)->stat.stx_size <= ((t_file_info*)rhd)->stat.stx_size)
+	if (((t_file_info*)lhd)->stat.stx_size < ((t_file_info*)rhd)->stat.stx_size)
 		return (-1);
+	else if (((t_file_info*)lhd)->stat.stx_size > ((t_file_info*)rhd)->stat.stx_size)
+		return (1);
+	return (comp_alpha(lhd, rhd));
+}
+
+static int	comp_btime(void* lhd, void* rhd) {
+/* 	// printf("comparing : \n\
+	// 	- %s : sec = %llu and nsec = %u \n\
+	// 	- %s : sec = %llu and nsec = %u \n", ((t_file_info*)lhd)->path, ((t_file_info*)lhd)->stat.stx_btime.tv_sec,
+	// 					((t_file_info*) lhd)->stat.stx_btime.tv_nsec, 
+	// 				((t_file_info*) rhd)->path, ((t_file_info*) rhd)->stat.stx_btime.tv_sec,
+	// 					((t_file_info*) rhd)->stat.stx_btime.tv_nsec); */
+	if (((t_file_info*)lhd)->stat.stx_btime.tv_sec > ((t_file_info*)rhd)->stat.stx_btime.tv_sec)
+		return (-1);
+	else if (((t_file_info*)lhd)->stat.stx_btime.tv_sec == ((t_file_info*)rhd)->stat.stx_btime.tv_sec) {
+		if (((t_file_info*)lhd)->stat.stx_btime.tv_nsec > ((t_file_info*)rhd)->stat.stx_btime.tv_nsec)
+			return (-1);
+		else if (((t_file_info*)lhd)->stat.stx_btime.tv_nsec == ((t_file_info*)rhd)->stat.stx_btime.tv_nsec)
+			return (comp_alpha(lhd, rhd));
+		return (1);
+	} 
 	return (1);
 }
+
+static int	comp_ctime(void* lhd, void* rhd) {
+	if (((t_file_info*)lhd)->stat.stx_ctime.tv_sec > ((t_file_info*)rhd)->stat.stx_ctime.tv_sec)
+		return (-1);
+	else if (((t_file_info*)lhd)->stat.stx_ctime.tv_sec == ((t_file_info*)rhd)->stat.stx_ctime.tv_sec) {
+		if (((t_file_info*)lhd)->stat.stx_ctime.tv_nsec > ((t_file_info*)rhd)->stat.stx_ctime.tv_nsec)
+			return (-1);
+		else if (((t_file_info*)lhd)->stat.stx_ctime.tv_nsec == ((t_file_info*)rhd)->stat.stx_ctime.tv_nsec)
+			return (comp_alpha(lhd, rhd));
+		return (1);
+	} 
+	return (1);
+}
+
+static int	comp_mtime(void* lhd, void* rhd) {
+	if (((t_file_info*)lhd)->stat.stx_mtime.tv_sec > ((t_file_info*)rhd)->stat.stx_mtime.tv_sec)
+		return (-1);
+	else if (((t_file_info*)lhd)->stat.stx_mtime.tv_sec == ((t_file_info*)rhd)->stat.stx_mtime.tv_sec) {
+		if (((t_file_info*)lhd)->stat.stx_mtime.tv_nsec > ((t_file_info*)rhd)->stat.stx_mtime.tv_nsec)
+			return (-1);
+		else if (((t_file_info*)lhd)->stat.stx_mtime.tv_nsec == ((t_file_info*)rhd)->stat.stx_mtime.tv_nsec)
+			return (comp_alpha(lhd, rhd));
+		return (1);
+	} 
+	return (1);
+}
+
+static int	comp_atime(void* lhd, void* rhd) {
+	if (((t_file_info*)lhd)->stat.stx_atime.tv_sec > ((t_file_info*)rhd)->stat.stx_atime.tv_sec)
+		return (-1);
+	else if (((t_file_info*)lhd)->stat.stx_atime.tv_sec == ((t_file_info*)rhd)->stat.stx_atime.tv_sec) {
+		if (((t_file_info*)lhd)->stat.stx_atime.tv_nsec > ((t_file_info*)rhd)->stat.stx_atime.tv_nsec)
+			return (-1);
+		else if (((t_file_info*)lhd)->stat.stx_atime.tv_nsec == ((t_file_info*)rhd)->stat.stx_atime.tv_nsec)
+			return (comp_alpha(lhd, rhd));
+		return (1);
+	} 
+	return (1);
+}
+
 
 /// @brief Append ```file_info``` to ```dest``` according to
 // the provided sort option in ```data```
@@ -80,7 +142,7 @@ static int	push_file_info(t_file_info* file_info, t_list** dest, t_opts* options
 					break;
 				
 				case TIME_BY_BTIME:
-					comp_time = &comp_ctime;
+					comp_time = &comp_btime;
 					break;
 
 				case TIME_BY_CTIME:
