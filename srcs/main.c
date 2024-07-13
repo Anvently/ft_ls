@@ -29,6 +29,7 @@ static int	init_data(t_data* data, char** env) {
 	struct winsize w;
 	char*	env_width;
 
+	data->options.statx_mask = LS_STATX_DFT_MASK;
 	if (isatty(STDOUT_FILENO)) {
 		data->options.is_tty = true;
 		if (ioctl(0, TIOCGWINSZ, &w) < 0)

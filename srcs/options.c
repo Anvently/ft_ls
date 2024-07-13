@@ -32,6 +32,9 @@ int	option_set_long_listing(t_opts* options, char* arg) {
 	(void) arg;
 	options->long_listing = true;
 	options->format_by = FORMAT_BY_LINE;
+	options->statx_mask |= STATX_NLINK | STATX_UID | STATX_GID | STATX_SIZE;
+	if (options->time_by == TIME_BY_MTIME)
+		options->statx_mask |= STATX_MTIME;
 	return (0);
 }
 
@@ -45,12 +48,15 @@ int	option_set_human_readable(t_opts* options, char* arg) {
 int	option_set_access_time(t_opts* options, char* arg) {
 	(void) arg;
 	options->time_by = TIME_BY_ATIME;
+	options->statx_mask &= ~(STATX_MTIME | STATX_BTIME | STATX_CTIME);
+	options->statx_mask |= STATX_ATIME;
 	return (0);
 }
 
 int	option_set_inode(t_opts* options, char* arg) {
 	(void) arg;
 	options->inode = true;
+	options->statx_mask |= STATX_INO;
 	return (0);
 }
 
@@ -99,17 +105,24 @@ int	option_set_sort_reverse(t_opts* options, char* arg) {
 int	option_set_sort_time(t_opts* options, char* arg) {
 	(void) arg;
 	options->sort_by = SORT_BY_TIME;
+	if (options->time_by == TIME_BY_MTIME)
+		options->statx_mask |= STATX_MTIME;
 	return (0);
 }
 
 int	option_set_sort_none(t_opts* options, char* arg) {
 	(void) arg;
+	if (options->long_listing == false)
+		options->statx_mask &= ~(STATX_ATIME | STATX_BTIME | STATX_CTIME | STATX_MTIME | STATX_SIZE);
 	options->sort_by = SORT_BY_NONE;
 	return (0);
 }
 
 int	option_set_sort_size(t_opts* options, char* arg) {
 	(void) arg;
+	if (options->long_listing == false)
+		options->statx_mask &= ~(STATX_ATIME | STATX_BTIME | STATX_CTIME | STATX_MTIME);
+	options->statx_mask |= (STATX_SIZE);
 	options->sort_by = SORT_BY_SIZE;
 	return (0);
 }
@@ -148,6 +161,21 @@ int	option_argument_sort(t_opts* options, char* arg) {
 			return (ls_error_ambiguous_argument("sort", arg, valids));
 
 		default:
+			switch (ret - 1)
+			{
+				case SORT_BY_SIZE:
+					option_set_sort_size(options, NULL);
+					break;
+
+				case SORT_BY_TIME:
+					if (options->time_by == TIME_BY_MTIME)
+						options->statx_mask |= STATX_MTIME;
+					break;
+				
+				default:
+					option_set_sort_none(options, NULL);
+					break;
+			}
 			options->sort_by = ret - 1;
 			return (0);
 	}
@@ -170,6 +198,25 @@ int	option_argument_time(t_opts* options, char* arg) {
 
 		default:
 			options->time_by = ret;
+			options->statx_mask &= ~(STATX_ATIME | STATX_BTIME | STATX_CTIME | STATX_MTIME);
+			switch (options->time_by)
+			{
+				case TIME_BY_ATIME:
+					options->statx_mask |= STATX_ATIME;
+					break;
+
+				case TIME_BY_MTIME:
+					options->statx_mask |= STATX_MTIME;
+					break;
+				
+				case TIME_BY_CTIME:
+					options->statx_mask |= STATX_CTIME;
+					break;
+
+				case TIME_BY_BTIME:
+					options->statx_mask |= STATX_BTIME;
+					break;
+			}
 			return (0);
 	}
 };

@@ -61,10 +61,6 @@ Token element :
 	- a directory
 		
 TODO:
-	- sorting not really working
 	- ls doesn't do padding when printing last column
-	- with sorting=NONE, maybe we need to print straight away instead of adding
-		to file list ?
-	- retrieve dir files
 	- add colors
 	- implement long listing

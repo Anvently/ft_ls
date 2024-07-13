@@ -8,6 +8,8 @@
 // # include <statx-generic.h>
 # include <stdlib.h>
 
+# define LS_STATX_DFT_MASK (STATX_TYPE | STATX_MODE)
+
 
 enum	SORT_BY {SORT_BY_NONE = -1,
 				SORT_BY_ALPHA,
@@ -43,7 +45,15 @@ enum	LS_ERRORS {
 		ERROR_INPUT = 2
 };
 
-typedef struct s_options
+/// @brief Priority order
+/// Seems to check for extension at the end if no other rule is found
+typedef struct s_colors {
+	char*	reset;
+	char*	dir;
+	char*	link; //if it is a symbolic link
+}	t_colors;
+
+typedef struct s_options 
 {
 	bool				long_listing;
 	bool				human_readable;
@@ -58,6 +68,7 @@ typedef struct s_options
 	bool				colorize;
 	enum FILTER_FILE	filter;
 	bool				is_tty;
+	unsigned int		statx_mask;
 } t_opts;
 
 typedef struct s_list t_list;
@@ -158,6 +169,7 @@ void	ls_reset_limits(t_data* data);
 void	ls_free_file_info(void* ptr);
 
 void	ls_print_options(t_opts* options);
+void	ls_print_statx_mask(unsigned int mask);
 
 int	ls_print(t_data* data);
 

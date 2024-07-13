@@ -82,3 +82,19 @@ void	ls_print_options(t_opts* options) {
 			break;
 	}
 }
+
+void	ls_print_statx_mask(unsigned int mask) {
+	ft_printf("%u=> %s%s%s%s%s%s%s%s%s%s%s\n", mask, 
+		((mask & STATX_TYPE) ? "TYPE | " : ""),
+		((mask & STATX_MODE) ? "MODE | " : ""),
+		((mask & STATX_NLINK) ? "NLINK | " : ""),
+		((mask & STATX_UID) ? "UID | " : ""),
+		((mask & STATX_GID) ? "GID | " : ""),
+		((mask & STATX_ATIME) ? "ATIME | " : ""),
+		((mask & STATX_MTIME) ? "MTIME | " : ""),
+		((mask & STATX_CTIME) ? "CTIME | " : ""),
+		((mask & STATX_INO) ? "INO | " : ""),
+		((mask & STATX_SIZE) ? "SIZE | " : ""),
+		((mask & STATX_BTIME) ? "BTIME | " : "")
+	);
+}

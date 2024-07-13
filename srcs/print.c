@@ -114,11 +114,9 @@ static int	print_column(t_data* data) {
 	return (0);
 }
 
-static int	print_files(t_data* data, t_file_info* dir) {
+static int	print_files(t_data* data) {
 	int ret = 0;
 
-	if (dir)
-		ft_printf("%s:\n", dir->path);
 	if (data->nbr_files == 0)
 		return (0);
 	if (data->options.format_by == FORMAT_BY_LINE 
@@ -160,7 +158,7 @@ static void	clear_files(t_data* data) {
 int	ls_print(t_data* data) {
 	int ret = 0, res, nbr_iter = 0;
 
-	if (data->nbr_files && print_files(data, NULL))
+	if (data->nbr_files && print_files(data))
 		return (ERROR_FATAL);
 	while (data->targets) {
 		clear_files(data);
@@ -169,9 +167,13 @@ int	ls_print(t_data* data) {
 			return (ERROR_FATAL);
 		else if (res > 0)
 			ret = 1;
-		print_files(data, (nbr_iter || data->targets->next) ? (t_file_info*)data->targets->content : NULL);
-		if (data->targets->next)
-			write(1, "\n", 1);
+		else {
+			if (nbr_iter)
+				write(1, "\n", 1);
+			if (nbr_iter || data->targets->next)
+				ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path);
+			print_files(data);
+		}
 		ft_lstpop_front(&data->targets, &ls_free_file_info);
 		nbr_iter++;
 	}

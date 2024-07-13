@@ -276,11 +276,11 @@ static bool	check_name_filter(struct dirent* dir_entry, t_opts* options) {
 /// @param file_info 
 /// @return ```1``` if can't access to path
 /// ```-1``` if allocation error
-static int	get_file_info(const char* path, t_file_info** file_info) {
+static int	get_file_info(const char* path, t_file_info** file_info, t_data* data) {
 	*file_info = ft_calloc(1, sizeof(t_file_info));
 	if (*file_info == NULL)
 		return (ERROR_FATAL);
-	if (statx(AT_FDCWD, path, 0, STATX_ALL, &(*file_info)->stat) < 0) {
+	if (statx(AT_FDCWD, path, 0, data->options.statx_mask, &(*file_info)->stat) < 0) {
 		free(*file_info);
 		return (ls_error_no_access(path, errno));
 	}
@@ -304,10 +304,10 @@ static int	get_file_info_from_dir(int dir_fd, struct dirent* dir_entry, t_file_i
 		return (ERROR_FATAL);
 	ft_strlcpy(&(*file_info)->filename[0], &dir_entry->d_name[0], 256);
 	(*file_info)->path = &(*file_info)->filename[0];
-	if (data->options.sort_by != SORT_BY_NONE || data->options.long_listing) {
-		if (statx(dir_fd, &dir_entry->d_name[0], 0, STATX_ALL, &(*file_info)->stat) < 0) {
+	if (data->options.statx_mask != LS_STATX_DFT_MASK) {
+		if (statx(dir_fd, &dir_entry->d_name[0], 0, data->options.statx_mask, &(*file_info)->stat) < 0) {
 			free(*file_info);
-			return (ERROR_SYS);
+			return (ERROR_SYS);	
 		}
 	} else {
 		(*file_info)->stat.stx_ino = dir_entry->d_ino;
@@ -328,7 +328,7 @@ int	ls_retrieve_arg_file(const char* path, t_data* data) {
 	t_list**	destination;
 	int			ret = 0;
 	
-	if ((ret = get_file_info(path, &file_info)))
+	if ((ret = get_file_info(path, &file_info, data)))
 		return (ret);
 	if (S_ISDIR(file_info->stat.stx_mode) && data->options.filter_dir == false)
 		destination = &data->targets;
@@ -361,8 +361,12 @@ static int	append_recursive_subfolder(t_list* current_node, t_list** dest, t_fil
 		return (ERROR_FATAL);
 	}
 	ft_strlcpy(target_info->path, ((t_file_info*)current_node->content)->path, parent_path_len + 1);
-	ft_strlcpy(target_info->path + parent_path_len, "/", 2);
-	ft_strlcpy(target_info->path + parent_path_len + 1, &dir_info->filename[0], parent_path_len + dir_name_len + 2);
+	if (target_info->path[parent_path_len - 1] != '/') {
+		ft_strlcpy(target_info->path + parent_path_len, "/", 2);
+		ft_strlcpy(target_info->path + parent_path_len + 1, &dir_info->filename[0], parent_path_len + dir_name_len + 2);
+	}
+	else
+		ft_strlcpy(target_info->path + parent_path_len, &dir_info->filename[0], parent_path_len + dir_name_len + 2);
 	if (push_file_info(target_info, dest, options)) {
 		ls_free_file_info(target_info);
 		return (ERROR_FATAL);
@@ -391,6 +395,7 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 	struct dirent*	dir_entry = NULL;
 	int				ret = 0, res, dir_fd = -1;
 
+	errno = 0;
 	dir = opendir(dir_info->path);
 	if (dir == NULL)
 		return (ls_error_open(dir_info->path, errno));
