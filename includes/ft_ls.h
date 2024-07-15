@@ -84,6 +84,8 @@ typedef struct s_options
 	enum FILTER_FILE	filter;
 	bool				is_tty;
 	unsigned int		statx_mask;
+	bool				retrieve_xattr;
+	bool				reach_slink;
 } t_opts;
 
 typedef struct s_list t_list;
@@ -162,6 +164,7 @@ typedef struct s_ls_data {
 	unsigned int*	columns_width;
 	// unsigned int*	columns_inode_width;
 	unsigned int	column_len;
+	t_colors		colors;
 } t_data;
 
 int	ls_error_invalid_flag(const char flag);
@@ -175,10 +178,14 @@ int	ls_error_open(const char* path, int errno);
 int	ls_error_invalid_width(const char* width);
 int	ls_error_invalid_argument(const char* option, const char* arg, const char*** valids);
 int	ls_error_ambiguous_argument(const char* option, const char* arg, const char*** valids);
+int	ls_error_unparsable_color(char* color);
 
 int	ls_parse_args(int nbr, char** args, t_data* data);
 int	ls_retrieve_arg_file(const char* path, t_data* data);
 int	ls_retrieve_dir_files(t_list* current_node, t_data* data);
+
+int	ls_parse_colors(t_data* data, char** env);
+char*	ls_color_get(t_file_info* file_info, t_data* data);
 
 void	ls_reset_limits(t_data* data);
 void	ls_free_file_info(void* ptr);

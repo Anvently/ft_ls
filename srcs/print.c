@@ -59,13 +59,24 @@ static int	compute_columns(t_data* data) {
 	return (0);
 }
 
-static int	print_file_short(t_file_info* file_info, t_opts* options, unsigned int path_w, unsigned int inode_w) {
-	if (options->inode) {
-		if (ft_printf("%-*u %-*s", inode_w, (unsigned int) file_info->stat.stx_ino, path_w, file_info->path) < 0)
+static int	print_filename(t_file_info* file_info, unsigned int width, t_data* data) {
+	if (data->options.colorize) {
+		if (ft_printf("\033[%sm%s\033[%sm%*s", ls_color_get(file_info, data), file_info->path, data->colors.reset, width - ft_strlen(file_info->path), "") < 0)
+			return (ERROR_FATAL);
+	} else {
+		if (ft_printf("%-*s", width, file_info->path) < 0)
+			return (ERROR_FATAL);
+	}
+	return (0);
+}
+
+static int	print_file_short(t_file_info* file_info, t_data* data, unsigned int path_w, unsigned int inode_w) {
+	if (data->options.inode) {
+		if (ft_printf("%-*u ", inode_w, (unsigned int) file_info->stat.stx_ino) < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
-	if (ft_printf("%-*s", path_w, file_info->path) < 0)
+	if (print_filename(file_info, path_w, data))
 		return (ERROR_FATAL);
 	return (0);
 }
@@ -75,7 +86,7 @@ static int	print_single_row(t_data* data) {
 	t_file_info*	file_info;
 	for (unsigned int i = 0; i < data->nbr_files && file_node; i++) {
 		file_info = (t_file_info*)file_node->content;
-		if (print_file_short(file_info, &data->options, file_info->path_w, file_info->inode_w))
+		if (print_file_short(file_info, data, file_info->path_w, file_info->inode_w))
 			return (ERROR_FATAL);
 		if (i + 1 == data->nbr_files)
 			write(1, "\n", 1);
@@ -100,7 +111,7 @@ static int	print_column(t_data* data) {
 		for (unsigned int col = 0; col < data->nbr_column; col++) {
 			if (file_nodes[col] == NULL)
 				continue;
-			if (print_file_short((t_file_info*)file_nodes[col]->content, &data->options, \
+			if (print_file_short((t_file_info*)file_nodes[col]->content, data, \
 					data->columns_width[col * 2], data->columns_width[col * 2 + 1]) < 0) {
 				free (file_nodes);
 				return (ERROR_FATAL);
@@ -167,13 +178,11 @@ int	ls_print(t_data* data) {
 			return (ERROR_FATAL);
 		else if (res > 0)
 			ret = 1;
-		else {
-			if (nbr_iter)
-				write(1, "\n", 1);
-			if (nbr_iter || data->targets->next)
-				ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path);
-			print_files(data);
-		}
+		if (nbr_iter)
+			write(1, "\n", 1);
+		if (nbr_iter || data->targets->next)
+			ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path);
+		print_files(data);
 		ft_lstpop_front(&data->targets, &ls_free_file_info);
 		nbr_iter++;
 	}

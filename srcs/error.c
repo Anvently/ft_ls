@@ -79,3 +79,8 @@ int	ls_error_ambiguous_argument(const char* option, const char* arg, const char*
 	print_valid_arguments(valids);
 	return (ERROR_INPUT);
 }
+
+int	ls_error_unparsable_color(char* color) {
+	ft_dprintf(2, "ft_ls: unparsable value for LS_COLORS environment variable: %s\n", color);
+	return (0);
+}

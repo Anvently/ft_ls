@@ -305,9 +305,10 @@ static int	get_file_info_from_dir(int dir_fd, struct dirent* dir_entry, t_file_i
 	ft_strlcpy(&(*file_info)->filename[0], &dir_entry->d_name[0], 256);
 	(*file_info)->path = &(*file_info)->filename[0];
 	if (data->options.statx_mask != LS_STATX_DFT_MASK) {
-		if (statx(dir_fd, &dir_entry->d_name[0], 0, data->options.statx_mask, &(*file_info)->stat) < 0) {
+		if (statx(dir_fd, &dir_entry->d_name[0], AT_SYMLINK_NOFOLLOW, data->options.statx_mask, &(*file_info)->stat) < 0) {
 			free(*file_info);
-			return (ERROR_SYS);	
+			*file_info = NULL;
+			return (ls_error_no_access(&dir_entry->d_name[0], errno));	
 		}
 	} else {
 		(*file_info)->stat.stx_ino = dir_entry->d_ino;
@@ -395,29 +396,30 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 	struct dirent*	dir_entry = NULL;
 	int				ret = 0, res, dir_fd = -1;
 
-	errno = 0;
 	dir = opendir(dir_info->path);
 	if (dir == NULL)
 		return (ls_error_open(dir_info->path, errno));
 	dir_fd = dirfd(dir);
 	while (dir_fd > 0 && (dir_entry = readdir(dir))) {
+		errno = 0;
 		if (data->options.filter != FILTER_ALL && check_name_filter(dir_entry, &data->options) == false)
 			continue;
 		if ((res = get_file_info_from_dir(dir_fd, dir_entry, &file_info, data))) {
 			ret = res;
 			if (res < 0)
 				break;
+			continue;
 		}
 		if (data->options.format_by == FORMAT_BY_COLUMN)
 			ls_compute_file_width(file_info, data);
-		if ((ret = push_file_info(file_info, &data->files, &data->options)))
+		if ((res = push_file_info(file_info, &data->files, &data->options)))
 			break;
 		data->nbr_files++;
 		if (data->options.recursive && check_recursive_subfolder(file_info)
 			&& (ret = append_recursive_subfolder(current_node, &add_targets, file_info, &data->options)))
 			break;
 	}
-	if (ret < 0 && file_info)
+	if ((ret < 0 || res < 0) && file_info)
 		ls_free_file_info(file_info);
 	else if (errno && ret >= 0) {
 		ft_dprintf(2, "Unknown exception: %d: %s", errno, strerror(errno));
@@ -426,5 +428,5 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 	if (add_targets != NULL)
 		ft_lstmerge(current_node, &add_targets);
 	closedir(dir);
-	return (0);
+	return (ret);
 }

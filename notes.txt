@@ -64,3 +64,7 @@ TODO:
 	- ls doesn't do padding when printing last column
 	- add colors
 	- implement long listing
+
+https://www.linux.com/training-tutorials/file-types-linuxunix-explained-detail/
+https://www.bigsoft.co.uk/blog/2008/04/11/configuring-ls_colors
+https://man7.org/linux/man-pages/man7/capabilities.7.html

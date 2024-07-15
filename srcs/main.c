@@ -22,14 +22,21 @@ static int	free_all(int status, t_data* data) {
 	ft_lstclear(&data->targets, &ls_free_file_info);
 	if (data->columns_width)
 		free(data->columns_width);
+	if (data->colors.ls_colors)
+		ft_free_strs(data->colors.ls_colors);
 	return (status);
 }
 
 static int	init_data(t_data* data, char** env) {
-	struct winsize w;
+	struct 			winsize w;
+	static char*	empty_color = "0";
 	char*	env_width;
 
 	data->options.statx_mask = LS_STATX_DFT_MASK;
+	// ft_memset(&data->colors.reset, (int)&empty[0], sizeof(char*) * 17);
+	for (char** dest = &data->colors.reset; dest <= (char**)&data->colors.exec; dest++) {
+		*dest = &empty_color[0];
+	}
 	if (isatty(STDOUT_FILENO)) {
 		data->options.is_tty = true;
 		if (ioctl(0, TIOCGWINSZ, &w) < 0)
@@ -62,6 +69,9 @@ int	main(int argc, char **argv, char **env) {
 	if ((ret < 0 || ret > 1) || (ret == 1 && !data.files && !data.targets))
 		return (free_all(ret, &data));
 	if (!data.files && !data.targets && (ret = ls_retrieve_arg_file(".", &data)))
+		return (free_all(ret, &data));
+	if (data.options.colorize != COLOR_NONE && data.options.is_tty == true
+		&& (ret = ls_parse_colors(&data, env)))
 		return (free_all(ret, &data));
 	ret = ls_print(&data);
 	// ls_print_options(&data.options);
