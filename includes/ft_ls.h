@@ -48,9 +48,24 @@ enum	LS_ERRORS {
 /// @brief Priority order
 /// Seems to check for extension at the end if no other rule is found
 typedef struct s_colors {
+	char**	ls_colors; //array of strings containing all LS_COLORS entries
 	char*	reset;
 	char*	dir;
 	char*	link; //if it is a symbolic link
+	char*	multi_hard_link;
+	char*	fifo;
+	char*	socket;
+	char*	door; //????
+	char*	block_device;
+	char*	character_device;
+	char*	orphan; //symlink to deleted file or non stat-able file
+	char*	setuid; //sticky uid ? (u+s)
+	char*	setgid; //sticky gid ? (g+s)
+	char*	capability; //???
+	char*	sticky_other_writable; //dir which is sticky and other writable (+t, o+w)
+	char*	other_writable; //otehr_writable file but not sticky
+	char*	sticky; //sticky bit but not other-writable
+	char*	exec; //file with execute permission
 }	t_colors;
 
 typedef struct s_options 
