@@ -84,8 +84,11 @@ typedef struct s_options
 	enum FILTER_FILE	filter;
 	bool				is_tty;
 	unsigned int		statx_mask;
+	// unsigned int		statx_flags;
 	bool				retrieve_xattr;
-	bool				reach_slink;
+	bool				check_symlink; //Orphan symlink will be checked
+	bool				deref_symlink; //Data used will be dereferenced
+										//symlink
 } t_opts;
 
 typedef struct s_list t_list;
@@ -111,6 +114,7 @@ enum	OPTIONS {
 			OPT_RECURSIVE, // -R
 			OPT_ALIAS_f, // => --color=none + -a + -U
 			OPT_FORCE_COLUMN,
+			OPT_DEREF_LINK,
 			NBR_OPTIONS
 };
 
@@ -133,6 +137,9 @@ typedef struct s_ls_file_info {
 	struct statx	stat;
 	unsigned int	path_w;
 	unsigned int	inode_w;
+	char*			link_filename;
+	bool			orphan;
+	bool			stat_failed;
 } t_file_info;
 
 // typedef struct s_format_data {

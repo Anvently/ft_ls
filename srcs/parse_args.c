@@ -18,6 +18,7 @@ int	option_set_sort_size(t_opts* options, char*);
 int	option_set_recursive(t_opts* options, char*);
 int	option_set_alias_f(t_opts* options, char*);
 int	option_set_column(t_opts* options, char*);
+int	option_deref_symlink(t_opts* options, char*);
 int	option_argument_sort(t_opts* options, char* arg);
 int	option_argument_time(t_opts* options, char* arg);
 
@@ -90,7 +91,7 @@ static t_ls_flag options_map[] = {
 	},
 	[OPT_SORT_SIZE] 	= (t_ls_flag) {
 		.short_id = 'S',
-		.handler = option_set_sort_none
+		.handler = option_set_sort_size
 	},
 	[OPT_SORT] 			= (t_ls_flag) {
 		.long_id = "sort",
@@ -109,6 +110,11 @@ static t_ls_flag options_map[] = {
 	[OPT_FORCE_COLUMN]	= (t_ls_flag) {
 		.short_id = 'C',
 		.handler = option_set_column
+	},
+	[OPT_DEREF_LINK]	= (t_ls_flag) {
+		.short_id = 'L',
+		.long_id = "dereference",
+		.handler = option_deref_symlink
 	}
 };
 

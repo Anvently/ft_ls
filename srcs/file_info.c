@@ -76,10 +76,11 @@ static int	comp_extension(void* lhd, void* rhd) {
 }
 
 static int	comp_size(void* lhd, void* rhd) {
+	// printf("%s (%llu) vs %s (%lld)\n", ((t_file_info*)lhd)->path, ((t_file_info*)lhd)->stat.stx_size, ((t_file_info*)rhd)->path, ((t_file_info*)lhd)->stat.stx_size);
 	if (((t_file_info*)lhd)->stat.stx_size < ((t_file_info*)rhd)->stat.stx_size)
-		return (-1);
-	else if (((t_file_info*)lhd)->stat.stx_size > ((t_file_info*)rhd)->stat.stx_size)
 		return (1);
+	else if (((t_file_info*)lhd)->stat.stx_size > ((t_file_info*)rhd)->stat.stx_size)
+		return (-1);
 	return (comp_alpha(lhd, rhd));
 }
 
@@ -247,6 +248,8 @@ void	ls_free_file_info(void* ptr) {
 		return ;
 	if (file_info->path && file_info->path != &file_info->filename[0])
 		free(file_info->path);
+	if (file_info->link_filename)
+		free(file_info->link_filename);
 	free(file_info);
 }
 
@@ -271,16 +274,66 @@ static bool	check_name_filter(struct dirent* dir_entry, t_opts* options) {
 	}
 }
 
+/// @brief Read a symlink using an opened directory's fd (if 
+/// ```dir_fd``` >= 0) and a relative path or using ```file_info->path```
+/// as an absolute file (if ```dir_fd``` < 0)
+/// @param dir_fd 
+/// @param file_info 
+/// @return ```-1``` if allocation error. If readlink fails,
+///  ```0``` is return but ```file_info->link_filename```
+/// is set to ```NULL```.
+static int	get_link(int dir_fd, t_file_info* file_info) {
+	ssize_t	len;
+
+	file_info->link_filename = malloc(128 + 1);
+	if (file_info->link_filename == NULL)
+		return (ERROR_FATAL);
+	if ((dir_fd >= 0 && (len = readlinkat(dir_fd, file_info->path, file_info->link_filename, 128)) < 0)
+		|| (dir_fd < 0 && (len = readlink(file_info->path, file_info->link_filename, 128)) < 0)) {
+		free(file_info->link_filename);
+		file_info->link_filename = NULL;
+		return (0);
+	}
+	file_info->link_filename[len] = '\0';
+	return (0);
+}
+
+static int	handle_symlink(int dir_fd, t_file_info* file_info, t_data* data) {
+	int	old_errno = errno;
+	static struct statx empty_struct, *dest;
+
+	dest = &empty_struct;
+	if (data->options.long_listing && get_link(dir_fd, file_info))
+		return (ERROR_FATAL);
+	if (data->options.deref_symlink)
+		dest = &file_info->stat;
+	if (statx(dir_fd, file_info->path, 0, data->options.statx_mask, dest) < 0) {
+		file_info->orphan = true;
+		if (data->options.deref_symlink) {
+			ls_error_no_access(file_info->path, errno);
+			ft_memset(&file_info->stat, 0, sizeof(struct statx));
+			file_info->stat.stx_mode = __S_IFLNK;
+			file_info->stat_failed = true;
+			return (ERROR_SYS);
+		}
+		errno = old_errno;
+	}
+	return (0);
+
+}
+
 /// @brief Return an allocated ```file_info``` struct
 /// @param path 
 /// @param file_info 
 /// @return ```1``` if can't access to path
 /// ```-1``` if allocation error
 static int	get_file_info(const char* path, t_file_info** file_info, t_data* data) {
+	int	ret = 0;
+
 	*file_info = ft_calloc(1, sizeof(t_file_info));
 	if (*file_info == NULL)
 		return (ERROR_FATAL);
-	if (statx(AT_FDCWD, path, 0, data->options.statx_mask, &(*file_info)->stat) < 0) {
+	if (statx(AT_FDCWD, path, AT_SYMLINK_NOFOLLOW, data->options.statx_mask, &(*file_info)->stat) < 0) {
 		free(*file_info);
 		return (ls_error_no_access(path, errno));
 	}
@@ -288,7 +341,11 @@ static int	get_file_info(const char* path, t_file_info** file_info, t_data* data
 		free(*file_info);
 		return (ERROR_FATAL);
 	}
-	return (0);
+	if (S_ISLNK((*file_info)->stat.stx_mode) && data->options.check_symlink)
+		ret = handle_symlink(AT_FDCWD, *file_info, data);
+	if (ret)
+		ls_free_file_info(*file_info);
+	return (ret);
 }
 
 /// @brief Return allocated ```file_info``` struct of a file from it's directory
@@ -299,6 +356,8 @@ static int	get_file_info(const char* path, t_file_info** file_info, t_data* data
 /// @return ```1``` if can't access to path
 /// ```-1``` if allocation error
 static int	get_file_info_from_dir(int dir_fd, struct dirent* dir_entry, t_file_info** file_info, t_data* data) {
+	int	ret = 0;
+
 	*file_info = ft_calloc(1, sizeof(t_file_info));
 	if (*file_info == NULL)
 		return (ERROR_FATAL);
@@ -314,7 +373,13 @@ static int	get_file_info_from_dir(int dir_fd, struct dirent* dir_entry, t_file_i
 		(*file_info)->stat.stx_ino = dir_entry->d_ino;
 		(*file_info)->stat.stx_mode = DTTOIF(dir_entry->d_type);
 	}
-	return (0);
+	if (S_ISLNK((*file_info)->stat.stx_mode) && data->options.check_symlink
+		&& (ret = handle_symlink(dir_fd, *file_info, data)) < 0) {
+		ls_free_file_info(*file_info);
+		*file_info = NULL;
+		return (ERROR_FATAL);
+	}
+	return (ret);
 }
 
 /// @brief Given an arg, either add it to :
@@ -408,7 +473,8 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 			ret = res;
 			if (res < 0)
 				break;
-			continue;
+			if (file_info->stat_failed == false)
+				continue;
 		}
 		if (data->options.format_by == FORMAT_BY_COLUMN)
 			ls_compute_file_width(file_info, data);

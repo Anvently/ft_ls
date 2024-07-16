@@ -101,7 +101,7 @@ static int ls_retrieve_colors(t_data* data, char** color_strs) {
 				{
 					case 'r':
 						data->colors.orphan = color + 3;
-						data->options.reach_slink = true;
+						data->options.check_symlink = true;
 						break;
 					
 					case 'w':
@@ -165,9 +165,13 @@ static int ls_retrieve_colors(t_data* data, char** color_strs) {
 /// @param env 
 /// @return ```-1``` if allocation error 
 int	ls_parse_colors(t_data* data, char** env) {
-	char*	colors;
-	int		ret = 0;
+	char*			colors;
+	static char*	empty_color = "0";
+	int				ret = 0;
 
+	for (char** dest = &data->colors.reset; dest <= (char**)&data->colors.exec; dest++) {
+		*dest = &empty_color[0];
+	}
 	colors = ft_getenv("LS_COLORS", env);
 	if (colors == NULL)
 		return (ERROR_SYS);
@@ -183,6 +187,29 @@ int	ls_parse_colors(t_data* data, char** env) {
 	ret = ls_retrieve_colors(data, data->colors.ls_colors);
 	free(colors);
 	return (ret);
+}
+
+static char*	ls_color_get_by_extension(char* filename, t_data* data) {
+	char*	color;
+	char*	value;
+	size_t	extension_len;
+	char**	color_strs = data->colors.ls_colors;
+
+	for (color = *color_strs; *color_strs; color = *color_strs++) {
+		if (color[0] != '*')
+			continue;
+		value = ft_strchr(color + 1, '=');
+		if (!value++)
+			continue;
+		*(value - 1) = '\0';
+		extension_len = (value - 1) - (color + 1);
+		if (ft_strncmp_rev(filename, color + 1, extension_len) == 0) {
+			*(value - 1) = '=';
+			return (value);
+		}
+		*(value - 1) = '=';
+	}
+	return (data->colors.reset);
 }
 
 char*	ls_color_get(t_file_info* file_info, t_data* data) {
@@ -222,7 +249,10 @@ char*	ls_color_get(t_file_info* file_info, t_data* data) {
 			break;
 
 		case __S_IFLNK:
-			color = data->colors.link;
+			if (file_info->orphan)
+				color = data->colors.orphan;
+			else
+				color = data->colors.link;
 			break;
 
 		case __S_IFSOCK:
@@ -230,6 +260,8 @@ char*	ls_color_get(t_file_info* file_info, t_data* data) {
 			break;
 
 		default:
+			if (color == data->colors.reset)
+				color = ls_color_get_by_extension(file_info->path, data);
 			break;
 	}
 	return (color);

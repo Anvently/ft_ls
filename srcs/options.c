@@ -1,5 +1,6 @@
 #include <ft_ls.h>
 #include <libft.h>
+#include <fcntl.h>
 
 /// @brief 
 /// @param option 
@@ -35,6 +36,7 @@ int	option_set_long_listing(t_opts* options, char* arg) {
 	options->statx_mask |= STATX_NLINK | STATX_UID | STATX_GID | STATX_SIZE;
 	if (options->time_by == TIME_BY_MTIME)
 		options->statx_mask |= STATX_MTIME;
+	options->check_symlink = true;
 	return (0);
 }
 
@@ -130,6 +132,13 @@ int	option_set_sort_size(t_opts* options, char* arg) {
 int	option_set_recursive(t_opts* options, char* arg) {
 	(void) arg;
 	options->recursive = true;
+	return (0);
+}
+
+int	option_deref_symlink(t_opts* options, char* arg) {
+	(void) arg;
+	options->check_symlink = true;
+	options->deref_symlink = true;
 	return (0);
 }
 

@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <fcntl.h>
 #include <string.h>
 
 /* static char**	options_map_str[sizeof(enum OPTIONS)] = {\
@@ -29,14 +30,10 @@ static int	free_all(int status, t_data* data) {
 
 static int	init_data(t_data* data, char** env) {
 	struct 			winsize w;
-	static char*	empty_color = "0";
 	char*	env_width;
 
 	data->options.statx_mask = LS_STATX_DFT_MASK;
-	// ft_memset(&data->colors.reset, (int)&empty[0], sizeof(char*) * 17);
-	for (char** dest = &data->colors.reset; dest <= (char**)&data->colors.exec; dest++) {
-		*dest = &empty_color[0];
-	}
+	// data->options.statx_flags = AT_SYMLINK_NOFOLLOW;
 	if (isatty(STDOUT_FILENO)) {
 		data->options.is_tty = true;
 		if (ioctl(0, TIOCGWINSZ, &w) < 0)

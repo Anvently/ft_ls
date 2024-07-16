@@ -72,9 +72,10 @@ static int	print_filename(t_file_info* file_info, unsigned int width, t_data* da
 
 static int	print_file_short(t_file_info* file_info, t_data* data, unsigned int path_w, unsigned int inode_w) {
 	if (data->options.inode) {
-		if (ft_printf("%-*u ", inode_w, (unsigned int) file_info->stat.stx_ino) < 0)
+		if (file_info->stat_failed == false && ft_printf("%*u ", inode_w, (unsigned int) file_info->stat.stx_ino) < 0)
 			return (ERROR_FATAL);
-		return (0);
+		else if (file_info->stat_failed == true && ft_printf("%*c ", inode_w, '?') < 0)
+			return (ERROR_FATAL);
 	}
 	if (print_filename(file_info, path_w, data))
 		return (ERROR_FATAL);
@@ -169,19 +170,22 @@ static void	clear_files(t_data* data) {
 int	ls_print(t_data* data) {
 	int ret = 0, res, nbr_iter = 0;
 
-	if (data->nbr_files && print_files(data))
-		return (ERROR_FATAL);
+	if (data->nbr_files) {
+		if (print_files(data))
+			return (ERROR_FATAL);
+		nbr_iter++;
+	}
 	while (data->targets) {
 		clear_files(data);
+		if (nbr_iter)
+			write(1, "\n", 1);
+		if (nbr_iter || data->targets->next)
+			ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path);
 		res = ls_retrieve_dir_files(data->targets, data);
 		if (res < 0)
 			return (ERROR_FATAL);
 		else if (res > 0)
 			ret = 1;
-		if (nbr_iter)
-			write(1, "\n", 1);
-		if (nbr_iter || data->targets->next)
-			ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path);
 		print_files(data);
 		ft_lstpop_front(&data->targets, &ls_free_file_info);
 		nbr_iter++;
