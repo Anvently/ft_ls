@@ -100,6 +100,7 @@ char	*ft_itoa(int n);
 char	*ft_uitoa(unsigned int n);
 char	*ft_ultoa(unsigned long n);
 char	*ft_ultoa_base(unsigned long n, char *base);
+unsigned int	ft_putunbr_buffer(unsigned long nbr, char* buffer, unsigned int size);
 
 ///------------------------ ITERATION ---------------------------
 

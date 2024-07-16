@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <sys/sysmacros.h>
 #include <string.h>
+#include <pwd.h>
 
 // /// @brief 
 // /// @param file_stat 
@@ -226,6 +227,16 @@ static void	assign_min_max(unsigned int* dest_max, unsigned int* dest_min, unsig
 		*dest_min = value;
 }
 
+static int	retrieve_guid_info(t_file_info* file_info) {
+	file_info->uid_ptr = getpwuid(file_info->stat.stx_uid);
+	if (file_info->uid_ptr == NULL)
+		return (ERROR_SYS);
+	file_info->gid_ptr = getgrgid(file_info->stat.stx_gid);
+	if (file_info->uid_ptr == NULL)
+		return (ERROR_SYS);
+	return (0);
+}
+
 /// @brief Calculate the nbr of characters required to print the given
 /// entry, update ```file_info``` and check the current
 /// minimum and maximum widths
@@ -239,6 +250,22 @@ static void	ls_compute_file_width(t_file_info* file_info, t_data* data) {
 		file_info->inode_w = len_nb(0, (unsigned int)file_info->stat.stx_ino);
 		assign_min_max(&data->size_limits.max_inode_w, &data->size_limits.min_inode_w, file_info->inode_w);
 	}
+	if (data->options.format_by == FORMAT_BY_COLUMN)
+		return;
+	retrieve_guid_info(file_info);
+	data->total_size += file_info->stat.stx_size;
+	assign_min_max(&data->size_limits.max_user_w, &data->size_limits.min_user_w, 
+		(file_info->stat_failed ? 1 : ft_strlen(file_info->uid_ptr->pw_name)));
+	assign_min_max(&data->size_limits.max_group_w, &data->size_limits.min_group_w, 
+		(file_info->stat_failed ? 1 : ft_strlen(file_info->gid_ptr->gr_name)));
+	if (data->options.human_readable)
+		assign_min_max(&data->size_limits.max_size_w, &data->size_limits.min_size_w, 
+			(file_info->stat_failed ? 1 : ft_strlen(ls_format_size(file_info))));
+	else
+		assign_min_max(&data->size_limits.max_size_w, &data->size_limits.min_size_w, 
+			(file_info->stat_failed ? 1 : len_nb(0, (unsigned int) file_info->stat.stx_size)));
+	// assign_min_max(&data->size_limits.max_date_w, &data->size_limits.min_date_w, 
+	// 	(file_info->stat_failed ? 1 : ft_strlen(file_info->uid_ptr->pw_name)));
 }
 
 void	ls_free_file_info(void* ptr) {
@@ -406,7 +433,7 @@ int	ls_retrieve_arg_file(const char* path, t_data* data) {
 	}
 	if (destination == &data->files)
 		data->nbr_files++;
-	if (data->options.format_by == FORMAT_BY_COLUMN && destination == &data->files)
+	if (destination == &data->files)
 		ls_compute_file_width(file_info, data);
 	return (0);
 }
@@ -476,8 +503,7 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 			if (file_info->stat_failed == false)
 				continue;
 		}
-		if (data->options.format_by == FORMAT_BY_COLUMN)
-			ls_compute_file_width(file_info, data);
+		ls_compute_file_width(file_info, data);
 		if ((res = push_file_info(file_info, &data->files, &data->options)))
 			break;
 		data->nbr_files++;

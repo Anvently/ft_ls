@@ -7,6 +7,8 @@
 # include <statx.h>
 // # include <statx-generic.h>
 # include <stdlib.h>
+# include <grp.h>
+# include <pwd.h>
 
 # define LS_STATX_DFT_MASK (STATX_TYPE | STATX_MODE)
 
@@ -131,6 +133,10 @@ typedef struct s_ls_flag {
 	int				(*handler)(t_opts*, char*);
 } t_ls_flag;
 
+// typedef struct s_ls_file_info_extended {
+
+// } t_file_xinfo;
+
 typedef struct s_ls_file_info {
 	char			filename[256];
 	char*			path;
@@ -140,6 +146,8 @@ typedef struct s_ls_file_info {
 	char*			link_filename;
 	bool			orphan;
 	bool			stat_failed;
+	struct passwd*	uid_ptr;
+	struct group*	gid_ptr;
 } t_file_info;
 
 // typedef struct s_format_data {
@@ -167,6 +175,7 @@ typedef struct s_ls_data {
 	t_opts			options;
 	t_size_limits	size_limits;
 	size_t			nbr_files;
+	size_t			total_size;
 	unsigned int	nbr_column;
 	unsigned int*	columns_width;
 	// unsigned int*	columns_inode_width;
@@ -193,6 +202,8 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data);
 
 int	ls_parse_colors(t_data* data, char** env);
 char*	ls_color_get(t_file_info* file_info, t_data* data);
+
+char*	ls_format_size(t_file_info* file_info);
 
 void	ls_reset_limits(t_data* data);
 void	ls_free_file_info(void* ptr);
