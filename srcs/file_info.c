@@ -270,8 +270,8 @@ void	ls_free_file_info(void* ptr) {
 		return ;
 	if (file_info->path && file_info->path != &file_info->filename[0])
 		free(file_info->path);
-	if (file_info->link_filename)
-		free(file_info->link_filename);
+	if (file_info->ln_target_filename)
+		free(file_info->ln_target_filename);
 	free(file_info);
 }
 
@@ -302,21 +302,21 @@ static bool	check_name_filter(struct dirent* dir_entry, t_opts* options) {
 /// @param dir_fd 
 /// @param file_info 
 /// @return ```-1``` if allocation error. If readlink fails,
-///  ```0``` is return but ```file_info->link_filename```
+///  ```0``` is return but ```file_info->ln_target_filename```
 /// is set to ```NULL```.
 static int	get_link(int dir_fd, t_file_info* file_info) {
 	ssize_t	len;
 
-	file_info->link_filename = malloc(128 + 1);
-	if (file_info->link_filename == NULL)
+	file_info->ln_target_filename = malloc(128 + 1);
+	if (file_info->ln_target_filename == NULL)
 		return (ERROR_FATAL);
-	if ((dir_fd >= 0 && (len = readlinkat(dir_fd, file_info->path, file_info->link_filename, 128)) < 0)
-		|| (dir_fd < 0 && (len = readlink(file_info->path, file_info->link_filename, 128)) < 0)) {
-		free(file_info->link_filename);
-		file_info->link_filename = NULL;
+	if ((dir_fd >= 0 && (len = readlinkat(dir_fd, file_info->path, file_info->ln_target_filename, 128)) < 0)
+		|| (dir_fd < 0 && (len = readlink(file_info->path, file_info->ln_target_filename, 128)) < 0)) {
+		free(file_info->ln_target_filename);
+		file_info->ln_target_filename = NULL;
 		return (0);
 	}
-	file_info->link_filename[len] = '\0';
+	file_info->ln_target_filename[len] = '\0';
 	return (0);
 }
 
@@ -339,6 +339,10 @@ static int	handle_symlink(int dir_fd, t_file_info* file_info, t_data* data) {
 			return (ERROR_SYS);
 		}
 		errno = old_errno;
+	}
+	if (data->options.deref_symlink == false) {
+		file_info->ln_target_mode = empty_struct.stx_mode;
+		file_info->ln_target_nlink = empty_struct.stx_nlink;
 	}
 	return (0);
 

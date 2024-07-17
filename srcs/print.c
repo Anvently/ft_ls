@@ -126,7 +126,10 @@ static inline int	print_file_inode(t_file_info* file_info, unsigned int width) {
 
 static inline int	print_file_name(t_file_info* file_info, unsigned int width, t_data* data) {
 	if (data->options.colorize) {
-		if (ft_printf("\033[%sm%s\033[%sm%*s", ls_color_get(file_info, data), file_info->path, data->colors.reset, width - ft_strlen(file_info->path), "") < 0)
+		if (ft_printf("\033[%sm%s\033[%sm%*s",
+			ls_color_get(file_info->path, file_info->stat.stx_mode,
+				file_info->stat.stx_nlink, file_info->orphan, data),
+			file_info->path, data->colors.reset, width - ft_strlen(file_info->path), "") < 0)
 			return (ERROR_FATAL);
 	} else {
 		if (ft_printf("%-*s", width, file_info->path) < 0)
@@ -308,10 +311,25 @@ static inline int	print_file_size(t_file_info* file_info, unsigned int width, bo
 			return (ERROR_FATAL);
 		return (0);
 	}
-	if (human_readable && ft_printf("%-*s ", width, ls_format_size(file_info->stat.stx_size)) < 0)
+	if (human_readable && ft_printf("%*s ", width, ls_format_size(file_info->stat.stx_size)) < 0)
 		return (ERROR_FATAL);
-	else if (!human_readable && ft_printf("%-*y ", width, file_info->stat.stx_size) < 0)
+	else if (!human_readable && ft_printf("%*y ", width, file_info->stat.stx_size) < 0)
 		return (ERROR_FATAL);
+	return (0);
+}
+
+static int	print_ln_target_filename(t_file_info* file_info, t_data* data) {
+	write (1, " -> ", 4);
+	if (data->options.colorize) {
+		if (ft_printf("\033[%sm%s\033[%sm",
+			ls_color_get(file_info->ln_target_filename, file_info->ln_target_mode,
+				file_info->ln_target_nlink, file_info->orphan, data),
+			file_info->path, data->colors.reset) < 0)
+			return (ERROR_FATAL);
+	} else {
+		if (ft_printf("%s", file_info->ln_target_filename) < 0)
+			return (ERROR_FATAL);
+	}
 	return (0);
 }
 
@@ -330,19 +348,26 @@ static int	print_file_long(t_file_info* file_info, t_data* data) {
 		return (ERROR_FATAL);
 	if (print_file_name(file_info, data->size_limits.max_path_w, data))
 		return (ERROR_FATAL);
+	if (data->options.deref_symlink == false && S_ISLNK(file_info->stat.stx_mode)
+		&& print_ln_target_filename(file_info, data))
+		return (ERROR_FATAL);
 	write(1, "\n", 1);
 	return (0);
 }
 
-static int	print_lines(t_data* data) {
-	t_list*	current = data->files;
-
+static inline int	print_total_size(t_data* data) {
 	if (data->options.long_listing) {
 		if (data->options.human_readable && ft_printf("total %s\n", ls_format_size(data->total_size)) < 0)
 			return (ERROR_FATAL);
 		else if (!data->options.human_readable && ft_printf("total %y\n", ls_convert_size_kilo(data->total_size)) < 0)
 			return (ERROR_FATAL);
 	}
+	return (0);
+}
+
+static int	print_lines(t_data* data) {
+	t_list*	current = data->files;
+
 	while (current) {
 		if (data->options.long_listing) {
 			if (print_file_long((t_file_info*)current->content, data))
@@ -414,13 +439,16 @@ int	ls_print(t_data* data) {
 		clear_files(data);
 		if (nbr_iter)
 			write(1, "\n", 1);
-		if (nbr_iter || data->targets->next)
-			ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path);
+		if ((nbr_iter || data->targets->next)
+			&& ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path) < 0)
+			return (ERROR_FATAL);
 		res = ls_retrieve_dir_files(data->targets, data);
 		if (res < 0)
 			return (ERROR_FATAL);
 		else if (res > 0)
 			ret = 1;
+		if (data->options.long_listing && print_total_size(data))
+			return (ERROR_FATAL);
 		if (print_files(data))
 			return (ERROR_FATAL);
 		ft_lstpop_front(&data->targets, &ls_free_file_info);

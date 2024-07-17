@@ -212,25 +212,25 @@ static char*	ls_color_get_by_extension(char* filename, t_data* data) {
 	return (data->colors.reset);
 }
 
-char*	ls_color_get(t_file_info* file_info, t_data* data) {
+char*	ls_color_get(char* filename, unsigned short mode, unsigned int nlink, bool orphan, t_data* data) {
 	char*	color = data->colors.reset;
 
-	if (file_info->stat.stx_nlink > 1)
+	if (nlink > 1)
 		color = data->colors.multi_hard_link;
-	if (file_info->stat.stx_mode & S_IEXEC)
+	if (mode & S_IEXEC)
 		color = data->colors.exec;
-	if (file_info->stat.stx_mode & S_ISGID)
+	if (mode & S_ISGID)
 		color = data->colors.setgid;
-	if (file_info->stat.stx_mode & S_ISUID)
+	if (mode & S_ISUID)
 		color = data->colors.setuid;
-	switch (file_info->stat.stx_mode & __S_IFMT)
+	switch (mode & __S_IFMT)
 	{
 		case __S_IFDIR:
-			if ((file_info->stat.stx_mode & S_IWOTH) && (file_info->stat.stx_mode & S_ISVTX))
+			if ((mode & S_IWOTH) && (mode & S_ISVTX))
 				color = data->colors.sticky_other_writable;
-			else if (file_info->stat.stx_mode & S_IWOTH)
+			else if (mode & S_IWOTH)
 				color = data->colors.other_writable;
-			else if (file_info->stat.stx_mode & S_ISVTX)
+			else if (mode & S_ISVTX)
 				color = data->colors.sticky;
 			else
 				color = data->colors.dir;
@@ -249,7 +249,7 @@ char*	ls_color_get(t_file_info* file_info, t_data* data) {
 			break;
 
 		case __S_IFLNK:
-			if (file_info->orphan)
+			if (orphan)
 				color = data->colors.orphan;
 			else
 				color = data->colors.link;
@@ -261,7 +261,7 @@ char*	ls_color_get(t_file_info* file_info, t_data* data) {
 
 		default:
 			if (color == data->colors.reset)
-				color = ls_color_get_by_extension(file_info->path, data);
+				color = ls_color_get_by_extension(filename, data);
 			break;
 	}
 	return (color);

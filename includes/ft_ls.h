@@ -143,11 +143,13 @@ typedef struct s_ls_file_info {
 	struct statx	stat;
 	unsigned int	path_w;
 	unsigned int	inode_w;
-	char*			link_filename;
 	bool			orphan;
 	bool			stat_failed;
 	struct passwd*	uid_ptr;
 	struct group*	gid_ptr;
+	char*			ln_target_filename;
+	unsigned short	ln_target_mode;
+	unsigned int	ln_target_nlink;
 } t_file_info;
 
 // typedef struct s_format_data {
@@ -203,7 +205,7 @@ int	ls_retrieve_arg_file(const char* path, t_data* data);
 int	ls_retrieve_dir_files(t_list* current_node, t_data* data);
 
 int	ls_parse_colors(t_data* data, char** env);
-char*	ls_color_get(t_file_info* file_info, t_data* data);
+char*	ls_color_get(char* filename, unsigned short mode, unsigned int nlink, bool orphan, t_data* data);
 
 char*	ls_format_size(size_t size);
 unsigned long	ls_convert_size_kilo(unsigned long size);
