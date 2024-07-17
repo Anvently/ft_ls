@@ -167,6 +167,8 @@ typedef struct s_size_limits {
 	unsigned int	max_group_w;
 	unsigned int	min_size_w;
 	unsigned int	max_size_w;
+	unsigned int	min_nlink_w;
+	unsigned int	max_nlink_w;
 } t_size_limits;
 
 typedef struct s_ls_data {
@@ -203,7 +205,8 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data);
 int	ls_parse_colors(t_data* data, char** env);
 char*	ls_color_get(t_file_info* file_info, t_data* data);
 
-char*	ls_format_size(t_file_info* file_info);
+char*	ls_format_size(size_t size);
+unsigned long	ls_convert_size_kilo(unsigned long size);
 
 void	ls_reset_limits(t_data* data);
 void	ls_free_file_info(void* ptr);

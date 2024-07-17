@@ -77,7 +77,6 @@ static int	comp_extension(void* lhd, void* rhd) {
 }
 
 static int	comp_size(void* lhd, void* rhd) {
-	// printf("%s (%llu) vs %s (%lld)\n", ((t_file_info*)lhd)->path, ((t_file_info*)lhd)->stat.stx_size, ((t_file_info*)rhd)->path, ((t_file_info*)lhd)->stat.stx_size);
 	if (((t_file_info*)lhd)->stat.stx_size < ((t_file_info*)rhd)->stat.stx_size)
 		return (1);
 	else if (((t_file_info*)lhd)->stat.stx_size > ((t_file_info*)rhd)->stat.stx_size)
@@ -86,12 +85,6 @@ static int	comp_size(void* lhd, void* rhd) {
 }
 
 static int	comp_btime(void* lhd, void* rhd) {
-/* 	// printf("comparing : \n\
-	// 	- %s : sec = %llu and nsec = %u \n\
-	// 	- %s : sec = %llu and nsec = %u \n", ((t_file_info*)lhd)->path, ((t_file_info*)lhd)->stat.stx_btime.tv_sec,
-	// 					((t_file_info*) lhd)->stat.stx_btime.tv_nsec, 
-	// 				((t_file_info*) rhd)->path, ((t_file_info*) rhd)->stat.stx_btime.tv_sec,
-	// 					((t_file_info*) rhd)->stat.stx_btime.tv_nsec); */
 	if (((t_file_info*)lhd)->stat.stx_btime.tv_sec > ((t_file_info*)rhd)->stat.stx_btime.tv_sec)
 		return (-1);
 	else if (((t_file_info*)lhd)->stat.stx_btime.tv_sec == ((t_file_info*)rhd)->stat.stx_btime.tv_sec) {
@@ -210,7 +203,7 @@ static int	push_file_info(t_file_info* file_info, t_list** dest, t_opts* options
 	return (0);
 }
 
-static unsigned int	len_nb(size_t len,  unsigned int nb)
+static unsigned int	len_nb(size_t len,  unsigned long nb)
 {
 	if (nb > 0)
 		len = len_nb(len + 1, nb / 10);
@@ -247,23 +240,25 @@ static void	ls_compute_file_width(t_file_info* file_info, t_data* data) {
 	file_info->path_w = (unsigned int)ft_strlen(file_info->path);
 	assign_min_max(&data->size_limits.max_path_w, &data->size_limits.min_path_w, file_info->path_w);
 	if (data->options.inode) {
-		file_info->inode_w = len_nb(0, (unsigned int)file_info->stat.stx_ino);
+		file_info->inode_w = len_nb(0, (unsigned long)file_info->stat.stx_ino);
 		assign_min_max(&data->size_limits.max_inode_w, &data->size_limits.min_inode_w, file_info->inode_w);
 	}
 	if (data->options.format_by == FORMAT_BY_COLUMN)
 		return;
 	retrieve_guid_info(file_info);
-	data->total_size += file_info->stat.stx_size;
+	data->total_size += (data->options.human_readable ? file_info->stat.stx_size : 512 * file_info->stat.stx_blocks);
 	assign_min_max(&data->size_limits.max_user_w, &data->size_limits.min_user_w, 
 		(file_info->stat_failed ? 1 : ft_strlen(file_info->uid_ptr->pw_name)));
 	assign_min_max(&data->size_limits.max_group_w, &data->size_limits.min_group_w, 
 		(file_info->stat_failed ? 1 : ft_strlen(file_info->gid_ptr->gr_name)));
+	assign_min_max(&data->size_limits.max_nlink_w, &data->size_limits.min_nlink_w, 
+		(file_info->stat_failed ? 1 : len_nb(0, file_info->stat.stx_nlink)));
 	if (data->options.human_readable)
 		assign_min_max(&data->size_limits.max_size_w, &data->size_limits.min_size_w, 
-			(file_info->stat_failed ? 1 : ft_strlen(ls_format_size(file_info))));
+			(file_info->stat_failed ? 1 : ft_strlen(ls_format_size(file_info->stat.stx_size))));
 	else
 		assign_min_max(&data->size_limits.max_size_w, &data->size_limits.min_size_w, 
-			(file_info->stat_failed ? 1 : len_nb(0, (unsigned int) file_info->stat.stx_size)));
+			(file_info->stat_failed ? 1 : len_nb(0, (unsigned long)file_info->stat.stx_size)));
 	// assign_min_max(&data->size_limits.max_date_w, &data->size_limits.min_date_w, 
 	// 	(file_info->stat_failed ? 1 : ft_strlen(file_info->uid_ptr->pw_name)));
 }

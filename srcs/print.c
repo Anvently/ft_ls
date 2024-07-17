@@ -64,19 +64,19 @@ static int	compute_columns(t_data* data) {
 /// @param file_info 
 /// @param data 
 /// @return 
-char*	ls_format_size(t_file_info* file_info) {
+char*	ls_format_size(size_t size) {
 	static char	formatted_size[64];
 	char	unit;
 	size_t	nwrite, div_size;
 	int	iter = 0;
 
-	for (div_size = file_info->stat.stx_size; div_size > 1024; div_size /= 1024) {
+	for (div_size = size; div_size > 1024; div_size /= 1024) {
 		iter++;
 	}
 	nwrite = ft_putunbr_buffer(div_size, formatted_size, 64);
 	if (nwrite == 1) {
 		formatted_size[nwrite++] = '.';
-		div_size = ((file_info->stat.stx_size % 1024) * 1000 / 1024) / 100;
+		div_size = ((size % 1024) * 1000 / 1024) / 100;
 		nwrite += ft_putunbr_buffer(div_size, formatted_size + nwrite, 64 - nwrite);
 	}
 	switch (iter)
@@ -110,7 +110,21 @@ char*	ls_format_size(t_file_info* file_info) {
 	return (formatted_size);
 }
 
-static int	print_filename(t_file_info* file_info, unsigned int width, t_data* data) {
+unsigned long	ls_convert_size_kilo(unsigned long size) {
+	if (size > 1024)
+		return (size / 1024);
+	return (size);
+}
+
+static inline int	print_file_inode(t_file_info* file_info, unsigned int width) {
+	if (file_info->stat_failed == false && ft_printf("%*y ", width, (unsigned long) file_info->stat.stx_ino) < 0)
+		return (ERROR_FATAL);
+	else if (file_info->stat_failed == true && ft_printf("%*c ", width, '?') < 0)
+		return (ERROR_FATAL);
+	return (0);
+}
+
+static inline int	print_file_name(t_file_info* file_info, unsigned int width, t_data* data) {
 	if (data->options.colorize) {
 		if (ft_printf("\033[%sm%s\033[%sm%*s", ls_color_get(file_info, data), file_info->path, data->colors.reset, width - ft_strlen(file_info->path), "") < 0)
 			return (ERROR_FATAL);
@@ -122,13 +136,9 @@ static int	print_filename(t_file_info* file_info, unsigned int width, t_data* da
 }
 
 static int	print_file_short(t_file_info* file_info, t_data* data, unsigned int path_w, unsigned int inode_w) {
-	if (data->options.inode) {
-		if (file_info->stat_failed == false && ft_printf("%*u ", inode_w, (unsigned int) file_info->stat.stx_ino) < 0)
-			return (ERROR_FATAL);
-		else if (file_info->stat_failed == true && ft_printf("%*c ", inode_w, '?') < 0)
-			return (ERROR_FATAL);
-	}
-	if (print_filename(file_info, path_w, data))
+	if (data->options.inode && print_file_inode(file_info, inode_w))
+		return (ERROR_FATAL);
+	if (print_file_name(file_info, path_w, data))
 		return (ERROR_FATAL);
 	return (0);
 }
@@ -177,22 +187,149 @@ static int	print_column(t_data* data) {
 	return (0);
 }
 
-static int	print_file_long(t_file_info* file_info, t_data* data) {
-	if (data->options.inode) {
-		if (file_info->stat_failed == false && ft_printf("%*u ", data->size_limits.max_inode_w, (unsigned int) file_info->stat.stx_ino) < 0)
-			return (ERROR_FATAL);
-		else if (file_info->stat_failed == true && ft_printf("%*c ", data->size_limits.max_inode_w, '?') < 0)
-			return (ERROR_FATAL);
+static int	print_file_mode(t_file_info* file_info) {
+	char	output[12] = "---------- ";
+
+	switch (file_info->stat.stx_mode & __S_IFMT)
+	{
+		case __S_IFDIR:
+			output[0] = 'd';
+			break;
+		
+		case __S_IFBLK:
+			output[0] = 'b';
+			break;
+
+		case __S_IFCHR:
+			output[0] = 'c';
+			break;
+
+		case __S_IFIFO:
+			output[0] = 'p';
+			break;
+
+		case __S_IFLNK:
+			output[0] = 'l';
+			break;
+
+		case __S_IFSOCK:
+			output[0] = 's';
+			break;
+
+		case __S_IFREG:
+			output[0] = '-';
+			break;
+
+		default:
+			output[0] = '?';
+			break;
 	}
-	ft_printf("l--------- ");
-	ft_printf("%d ", file_info->stat.stx_nlink);
-	ft_printf("%-*s ", data->size_limits.max_user_w, file_info->uid_ptr->pw_name);
-	ft_printf("%-*s ", data->size_limits.max_group_w, file_info->gid_ptr->gr_name);
-	if (data->options.human_readable)
-		ft_printf("%-*s ", data->size_limits.max_size_w, ls_format_size(file_info));
-	else
-		ft_printf("%-*u ", data->size_limits.max_size_w, (unsigned int) file_info->stat.stx_size);
-	print_filename(file_info, data->size_limits.max_path_w, data);
+	if (file_info->stat_failed) {
+		if (ft_printf("%c????????? ", output[0]) < 0)
+			return (ERROR_FATAL);
+		return (0);
+	}
+	if (file_info->stat.stx_mode & S_IRUSR)
+		output[1] = 'r';
+	if (file_info->stat.stx_mode & S_IWUSR)
+		output[2] = 'w';
+	if (file_info->stat.stx_mode & S_IXUSR)
+		output[3] = 'x';
+	if (file_info->stat.stx_mode & S_ISUID) {
+		if (file_info->stat.stx_mode & S_IXUSR)
+			output[3] = 's';
+		else
+			output[3] = 'S';
+	}
+	if (file_info->stat.stx_mode & S_IRGRP)
+		output[4] = 'r';
+	if (file_info->stat.stx_mode & S_IWGRP)
+		output[5] = 'w';
+	if (file_info->stat.stx_mode & S_IXGRP)
+		output[6] = 'x';
+	if (file_info->stat.stx_mode & S_ISGID) {
+		if (file_info->stat.stx_mode & S_IXGRP)
+			output[3] = 's';
+		else
+			output[3] = 'S';
+	}
+	if (file_info->stat.stx_mode & S_IROTH)
+		output[7] = 'r';
+	if (file_info->stat.stx_mode & S_IWOTH)
+		output[8] = 'w';
+	if (file_info->stat.stx_mode & S_IXOTH)
+		output[9] = 'x';
+	if (file_info->stat.stx_mode & S_ISVTX) {
+		if (file_info->stat.stx_mode & S_IXOTH)
+			output[3] = 't';
+		else
+			output[3] = 'T';
+	}
+	write(1, output, 11);
+	return (0);
+}
+
+static inline int	print_file_nlink(t_file_info* file_info, unsigned int width) {
+	if (file_info->stat_failed) {
+		if (ft_printf("%-*c ", width, '?') < 0)
+			return (ERROR_FATAL);
+		return (0);
+	}
+	if (ft_printf("%-*d ", width, file_info->stat.stx_nlink) < 0)
+		return (ERROR_FATAL);
+	return (0);
+}
+
+static inline int	print_file_user(t_file_info* file_info, unsigned int width) {
+	if (file_info->stat_failed) {
+		if (ft_printf("%-*c ", width, '?') < 0)
+			return (ERROR_FATAL);
+		return (0);
+	}
+	if (ft_printf("%-*s ", width, file_info->uid_ptr->pw_name) < 0)
+		return (ERROR_FATAL);
+	return (0);
+}
+
+static inline int	print_file_group(t_file_info* file_info, unsigned int width) {
+	if (file_info->stat_failed) {
+		if (ft_printf("%-*c ", width, '?') < 0)
+			return (ERROR_FATAL);
+		return (0);
+	}
+	if (ft_printf("%-*s ", width, file_info->gid_ptr->gr_name) < 0)
+		return (ERROR_FATAL);
+	return (0);
+}
+
+static inline int	print_file_size(t_file_info* file_info, unsigned int width, bool human_readable) {
+	if (file_info->stat_failed) {
+		if (ft_printf("%-*c ", width, '?') < 0)
+			return (ERROR_FATAL);
+		return (0);
+	}
+	if (human_readable && ft_printf("%-*s ", width, ls_format_size(file_info->stat.stx_size)) < 0)
+		return (ERROR_FATAL);
+	else if (!human_readable && ft_printf("%-*y ", width, file_info->stat.stx_size) < 0)
+		return (ERROR_FATAL);
+	return (0);
+}
+
+static int	print_file_long(t_file_info* file_info, t_data* data) {
+	if (data->options.inode && print_file_inode(file_info, data->size_limits.max_inode_w))
+		return (ERROR_FATAL);
+	if (print_file_mode(file_info))
+		return (ERROR_FATAL);
+	if (print_file_nlink(file_info, data->size_limits.max_nlink_w))
+		return (ERROR_FATAL);
+	if (print_file_user(file_info, data->size_limits.max_user_w))
+		return (ERROR_FATAL);
+	if (print_file_group(file_info, data->size_limits.max_group_w))
+		return (ERROR_FATAL);
+	if (print_file_size(file_info, data->size_limits.max_size_w, data->options.human_readable))
+		return (ERROR_FATAL);
+	if (print_file_name(file_info, data->size_limits.max_path_w, data))
+		return (ERROR_FATAL);
 	write(1, "\n", 1);
 	return (0);
 }
@@ -200,6 +337,12 @@ static int	print_file_long(t_file_info* file_info, t_data* data) {
 static int	print_lines(t_data* data) {
 	t_list*	current = data->files;
 
+	if (data->options.long_listing) {
+		if (data->options.human_readable && ft_printf("total %s\n", ls_format_size(data->total_size)) < 0)
+			return (ERROR_FATAL);
+		else if (!data->options.human_readable && ft_printf("total %y\n", ls_convert_size_kilo(data->total_size)) < 0)
+			return (ERROR_FATAL);
+	}
 	while (current) {
 		if (data->options.long_listing) {
 			if (print_file_long((t_file_info*)current->content, data))
@@ -254,6 +397,7 @@ static void	clear_files(t_data* data) {
 		free(data->columns_width);
 		data->columns_width = NULL;
 	}
+	data->total_size = 0;
 	data->nbr_files = 0;
 	ls_reset_limits(data);
 }
@@ -277,7 +421,8 @@ int	ls_print(t_data* data) {
 			return (ERROR_FATAL);
 		else if (res > 0)
 			ret = 1;
-		print_files(data);
+		if (print_files(data))
+			return (ERROR_FATAL);
 		ft_lstpop_front(&data->targets, &ls_free_file_info);
 		nbr_iter++;
 	}
