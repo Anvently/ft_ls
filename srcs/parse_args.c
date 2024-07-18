@@ -21,6 +21,8 @@ int	option_set_column(t_opts* options, char*);
 int	option_deref_symlink(t_opts* options, char*);
 int	option_argument_sort(t_opts* options, char* arg);
 int	option_argument_time(t_opts* options, char* arg);
+int	option_only_group(t_opts* options, char* arg);
+int	option_hide_group(t_opts* options, char* arg);
 
 static t_ls_flag options_map[] = {
 	[OPT_LONG]			= (t_ls_flag) {
@@ -115,6 +117,14 @@ static t_ls_flag options_map[] = {
 		.short_id = 'L',
 		.long_id = "dereference",
 		.handler = option_deref_symlink
+	},
+	[OPT_ONLY_GROUP]	= (t_ls_flag) {
+		.short_id = 'g',
+		.handler = option_only_group
+	},
+	[OPT_HIDE_GROUP]	= (t_ls_flag) {
+		.short_id = 'G',
+		.handler = option_hide_group
 	}
 };
 

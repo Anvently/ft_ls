@@ -2,7 +2,7 @@
 
 flags  
 
-Format : l, h, color, u, i, time, 1, wX/--width=X
+Format : l, h, color, u, i, time, 1, wX/--width=X, g, G
 	l => long listing
 	h => print sizes using verbal unit (K, M, G)
 	color => always (default), never, auto (only with a terminal)
@@ -11,6 +11,8 @@ Format : l, h, color, u, i, time, 1, wX/--width=X
 	time => specify which time to print and/or use for sorting
 	1 => force single line
 	wX / --width=X => manually fix width of columns in chars
+	g => doesn't print user_id in long_listing
+	G => hide group in long listing
 Filtering : a, A, d
 	a => accept .
 	A => -a without . and ..

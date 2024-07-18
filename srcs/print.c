@@ -88,7 +88,6 @@ char*	ls_format_size(size_t size) {
 		div_size += 1;
 	}
 	else if (div_size < 10 && remain) {
-		// ft_printf("remain = %y\n", remain);
 		if (remain > ((((size_t)1 << (10 * iter)) - (((size_t)1 << (10 * iter))) / 10)) - 1) {
 			remain = 0;
 			div_size++;
@@ -96,7 +95,6 @@ char*	ls_format_size(size_t size) {
 		else
 			remain = ((size % ((size_t)1 << (10 * iter))) * 1000 / ((size_t)1 << (10 * iter))) / 100 + 1;
 	}
-	// ft_printf("%y|%y\n", div_size, remain);
 	nwrite = ft_putunbr_buffer(div_size, formatted_size, 64);
 	if (nwrite == 1 && iter) {
 		formatted_size[nwrite++] = '.';
@@ -332,7 +330,7 @@ static inline int	print_file_group(t_file_info* file_info, unsigned int width) {
 
 static inline int	print_file_size(t_file_info* file_info, unsigned int width, bool human_readable) {
 	if (file_info->stat_failed) {
-		if (ft_printf("%-*c ", width, '?') < 0)
+		if (ft_printf("%*c ", width, '?') < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
@@ -346,8 +344,12 @@ static inline int	print_file_size(t_file_info* file_info, unsigned int width, bo
 static inline int	print_file_date(t_file_info* file_info, enum TIME_BY time_by) {
 	const char* str_date;
 	signed long long*	time;
-	// struct tm*	time_struct;
 
+	if (file_info->stat_failed) {
+		if (ft_printf("%*c ", 12, '?') < 0)
+			return (ERROR_FATAL);
+		return (0);
+	}
 	switch (time_by)
 	{
 		case TIME_BY_ATIME:
@@ -366,13 +368,9 @@ static inline int	print_file_date(t_file_info* file_info, enum TIME_BY time_by) 
 			time = &file_info->stat.stx_btime.tv_sec;
 			break;
 	}
-	// time_struct = gmtime();
-	// if (time_struct == NULL)
-	// 	return (ERROR_FATAL);
 	str_date = ctime((const time_t*)time);
 	if (str_date == NULL)
 		return (ERROR_FATAL);
-	// ft_printf("%s ", str_date + 4);
 	write(1, str_date + 4, ft_strlen(str_date) - 4 - 1 - 5 - 3);
 	write(1, " ", 1);
 	return (0);
@@ -400,9 +398,9 @@ static int	print_file_long(t_file_info* file_info, t_data* data) {
 		return (ERROR_FATAL);
 	if (print_file_nlink(file_info, data->size_limits.max_nlink_w))
 		return (ERROR_FATAL);
-	if (print_file_user(file_info, data->size_limits.max_user_w))
+	if ((data->options.statx_mask & STATX_UID) && print_file_user(file_info, data->size_limits.max_user_w))
 		return (ERROR_FATAL);
-	if (print_file_group(file_info, data->size_limits.max_group_w))
+	if ((data->options.statx_mask & STATX_GID) && print_file_group(file_info, data->size_limits.max_group_w))
 		return (ERROR_FATAL);
 	if (print_file_size(file_info, data->size_limits.max_size_w, data->options.human_readable))
 		return (ERROR_FATAL);
@@ -471,7 +469,6 @@ void	ls_reset_limits(t_data* data) {
 		data->size_limits.min_inode_w = UINT_MAX;
 	if (data->options.long_listing) {
 		data->size_limits.min_size_w = UINT_MAX;
-		data->size_limits.min_date_w = UINT_MAX;
 		data->size_limits.min_group_w = UINT_MAX;
 		data->size_limits.min_user_w = UINT_MAX;
 	}

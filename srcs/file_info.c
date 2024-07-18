@@ -220,13 +220,17 @@ static void	assign_min_max(unsigned int* dest_max, unsigned int* dest_min, unsig
 		*dest_min = value;
 }
 
-static int	retrieve_guid_info(t_file_info* file_info) {
-	file_info->uid_ptr = getpwuid(file_info->stat.stx_uid);
-	if (file_info->uid_ptr == NULL)
-		return (ERROR_SYS);
-	file_info->gid_ptr = getgrgid(file_info->stat.stx_gid);
-	if (file_info->uid_ptr == NULL)
-		return (ERROR_SYS);
+static int	retrieve_guid_info(t_file_info* file_info, t_data* data) {
+	if (data->options.statx_mask & STATX_GID) {
+		file_info->gid_ptr = getgrgid(file_info->stat.stx_gid);
+		if (file_info->gid_ptr == NULL)
+			return (ERROR_SYS);
+	}
+	if (data->options.statx_mask & STATX_UID) {
+		file_info->uid_ptr = getpwuid(file_info->stat.stx_uid);
+		if (file_info->uid_ptr == NULL)
+			return (ERROR_SYS);
+	}
 	return (0);
 }
 
@@ -245,12 +249,14 @@ static void	ls_compute_file_width(t_file_info* file_info, t_data* data) {
 	}
 	if (data->options.format_by == FORMAT_BY_COLUMN)
 		return;
-	retrieve_guid_info(file_info);
+	retrieve_guid_info(file_info, data);
 	data->total_size += (data->options.human_readable ? file_info->stat.stx_size : 512 * file_info->stat.stx_blocks);
-	assign_min_max(&data->size_limits.max_user_w, &data->size_limits.min_user_w, 
-		(file_info->stat_failed ? 1 : ft_strlen(file_info->uid_ptr->pw_name)));
-	assign_min_max(&data->size_limits.max_group_w, &data->size_limits.min_group_w, 
-		(file_info->stat_failed ? 1 : ft_strlen(file_info->gid_ptr->gr_name)));
+	if (data->options.statx_mask & STATX_UID)
+		assign_min_max(&data->size_limits.max_user_w, &data->size_limits.min_user_w, 
+			(file_info->stat_failed ? 1 : ft_strlen(file_info->uid_ptr->pw_name)));
+	if (data->options.statx_mask & STATX_GID)
+		assign_min_max(&data->size_limits.max_group_w, &data->size_limits.min_group_w, 
+			(file_info->stat_failed ? 1 : ft_strlen(file_info->gid_ptr->gr_name)));
 	assign_min_max(&data->size_limits.max_nlink_w, &data->size_limits.min_nlink_w, 
 		(file_info->stat_failed ? 1 : len_nb(0, file_info->stat.stx_nlink)));
 	if (data->options.human_readable)
@@ -259,8 +265,6 @@ static void	ls_compute_file_width(t_file_info* file_info, t_data* data) {
 	else
 		assign_min_max(&data->size_limits.max_size_w, &data->size_limits.min_size_w, 
 			(file_info->stat_failed ? 1 : len_nb(0, (unsigned long)file_info->stat.stx_size)));
-	// assign_min_max(&data->size_limits.max_date_w, &data->size_limits.min_date_w, 
-	// 	(file_info->stat_failed ? 1 : ft_strlen(file_info->uid_ptr->pw_name)));
 }
 
 void	ls_free_file_info(void* ptr) {

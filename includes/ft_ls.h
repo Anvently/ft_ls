@@ -117,6 +117,8 @@ enum	OPTIONS {
 			OPT_ALIAS_f, // => --color=none + -a + -U
 			OPT_FORCE_COLUMN,
 			OPT_DEREF_LINK,
+			OPT_ONLY_GROUP,
+			OPT_HIDE_GROUP,
 			NBR_OPTIONS
 };
 
@@ -161,8 +163,6 @@ typedef struct s_size_limits {
 	unsigned int	max_path_w;
 	unsigned int	min_inode_w;
 	unsigned int	max_inode_w;
-	unsigned int	min_date_w;
-	unsigned int	max_date_w;
 	unsigned int	min_user_w;
 	unsigned int	max_user_w;
 	unsigned int	min_group_w;

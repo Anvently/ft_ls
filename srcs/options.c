@@ -142,6 +142,19 @@ int	option_deref_symlink(t_opts* options, char* arg) {
 	return (0);
 }
 
+int	option_only_group(t_opts* options, char* arg) {
+	(void) arg;
+	option_set_long_listing(options, NULL);
+	options->statx_mask &= ~STATX_UID;
+	return (0);
+}
+
+int	option_hide_group(t_opts* options, char* arg) {
+	(void) arg;
+	options->statx_mask &= ~STATX_GID;
+	return (0);
+}
+
 int	option_argument_color(t_opts* options, char* arg);
 
 int	option_set_alias_f(t_opts* options, char* arg) {
