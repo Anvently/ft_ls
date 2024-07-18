@@ -1,5 +1,6 @@
 #include <ft_ls.h>
 #include <libft.h>
+#include <time.h>
 
 /// @brief 
 /// @param data 
@@ -342,6 +343,41 @@ static inline int	print_file_size(t_file_info* file_info, unsigned int width, bo
 	return (0);
 }
 
+static inline int	print_file_date(t_file_info* file_info, enum TIME_BY time_by) {
+	const char* str_date;
+	signed long long*	time;
+	// struct tm*	time_struct;
+
+	switch (time_by)
+	{
+		case TIME_BY_ATIME:
+			time = &file_info->stat.stx_atime.tv_sec;
+			break;
+
+		case TIME_BY_MTIME:
+			time = &file_info->stat.stx_mtime.tv_sec;
+			break;
+		
+		case TIME_BY_CTIME:
+			time = &file_info->stat.stx_ctime.tv_sec;
+			break;
+
+		case TIME_BY_BTIME:
+			time = &file_info->stat.stx_btime.tv_sec;
+			break;
+	}
+	// time_struct = gmtime();
+	// if (time_struct == NULL)
+	// 	return (ERROR_FATAL);
+	str_date = ctime((const time_t*)time);
+	if (str_date == NULL)
+		return (ERROR_FATAL);
+	// ft_printf("%s ", str_date + 4);
+	write(1, str_date + 4, ft_strlen(str_date) - 4 - 1 - 5 - 3);
+	write(1, " ", 1);
+	return (0);
+}
+
 static int	print_ln_target_filename(t_file_info* file_info, t_data* data) {
 	write (1, " -> ", 4);
 	if (data->options.colorize) {
@@ -369,6 +405,8 @@ static int	print_file_long(t_file_info* file_info, t_data* data) {
 	if (print_file_group(file_info, data->size_limits.max_group_w))
 		return (ERROR_FATAL);
 	if (print_file_size(file_info, data->size_limits.max_size_w, data->options.human_readable))
+		return (ERROR_FATAL);
+	if (print_file_date(file_info, data->options.time_by))
 		return (ERROR_FATAL);
 	if (print_file_name(file_info, 0, data))
 		return (ERROR_FATAL);
