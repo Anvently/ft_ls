@@ -215,6 +215,8 @@ static char*	ls_color_get_by_extension(char* filename, t_data* data) {
 char*	ls_color_get(char* filename, unsigned short mode, unsigned int nlink, bool orphan, t_data* data) {
 	char*	color = data->colors.reset;
 
+	if (mode == 0 && orphan)
+		return (data->colors.orphan);
 	if (nlink > 1)
 		color = data->colors.multi_hard_link;
 	if (mode & S_IEXEC)

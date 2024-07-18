@@ -59,7 +59,7 @@ static int	compute_columns(t_data* data) {
 	return (0);
 }
 
-/// @brief Return a static string where size of ```file_info```
+/// @brief Return a static string where ```size```
 /// was formatted in a human form.
 /// @param file_info 
 /// @param data 
@@ -67,12 +67,14 @@ static int	compute_columns(t_data* data) {
 char*	ls_format_size(size_t size) {
 	static char	formatted_size[64];
 	char	unit;
-	size_t	nwrite, div_size;
+	size_t	nwrite, div_size, remain;
 	int	iter = 0;
 
 	for (div_size = size; div_size > 1024; div_size /= 1024) {
 		iter++;
 	}
+	remain = ((size % 1024) * 1000 / 1024) / 100;
+	ft_printf("%y\n", remain);
 	nwrite = ft_putunbr_buffer(div_size, formatted_size, 64);
 	if (nwrite == 1) {
 		formatted_size[nwrite++] = '.';
@@ -129,7 +131,7 @@ static inline int	print_file_name(t_file_info* file_info, unsigned int width, t_
 		if (ft_printf("\033[%sm%s\033[%sm%*s",
 			ls_color_get(file_info->path, file_info->stat.stx_mode,
 				file_info->stat.stx_nlink, file_info->orphan, data),
-			file_info->path, data->colors.reset, width - ft_strlen(file_info->path), "") < 0)
+			file_info->path, data->colors.reset, (width ? width - ft_strlen(file_info->path) : 0), "") < 0)
 			return (ERROR_FATAL);
 	} else {
 		if (ft_printf("%-*s", width, file_info->path) < 0)
@@ -324,7 +326,7 @@ static int	print_ln_target_filename(t_file_info* file_info, t_data* data) {
 		if (ft_printf("\033[%sm%s\033[%sm",
 			ls_color_get(file_info->ln_target_filename, file_info->ln_target_mode,
 				file_info->ln_target_nlink, file_info->orphan, data),
-			file_info->path, data->colors.reset) < 0)
+			file_info->ln_target_filename, data->colors.reset) < 0)
 			return (ERROR_FATAL);
 	} else {
 		if (ft_printf("%s", file_info->ln_target_filename) < 0)
@@ -346,7 +348,7 @@ static int	print_file_long(t_file_info* file_info, t_data* data) {
 		return (ERROR_FATAL);
 	if (print_file_size(file_info, data->size_limits.max_size_w, data->options.human_readable))
 		return (ERROR_FATAL);
-	if (print_file_name(file_info, data->size_limits.max_path_w, data))
+	if (print_file_name(file_info, 0, data))
 		return (ERROR_FATAL);
 	if (data->options.deref_symlink == false && S_ISLNK(file_info->stat.stx_mode)
 		&& print_ln_target_filename(file_info, data))
