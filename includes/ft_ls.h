@@ -82,7 +82,7 @@ typedef struct s_options
 	bool				filter_dir;
 	enum TIME_BY		time_by;
 	bool				recursive;
-	bool				colorize;
+	enum COLORIZE		colorize;
 	enum FILTER_FILE	filter;
 	bool				is_tty;
 	unsigned int		statx_mask;

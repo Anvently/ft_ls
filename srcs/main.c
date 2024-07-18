@@ -67,8 +67,7 @@ int	main(int argc, char **argv, char **env) {
 		return (free_all(ret, &data));
 	if (!data.files && !data.targets && (ret = ls_retrieve_arg_file(".", &data)))
 		return (free_all(ret, &data));
-	if (data.options.colorize != COLOR_NONE && data.options.is_tty == true
-		&& (ret = ls_parse_colors(&data, env)))
+	if (data.options.colorize && (ret = ls_parse_colors(&data, env)))
 		return (free_all(ret, &data));
 	ret = ls_print(&data);
 	// ls_print_options(&data.options);

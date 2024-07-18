@@ -4,16 +4,23 @@
 /// @brief 
 /// @param data 
 /// @return 
-static bool	check_nbr_column(t_data* data) {
+static bool	check_nbr_column(t_data* data, unsigned int nbr_column) {
 	unsigned int total_width = 0;
 	t_list*	file_node;
 
-	data->column_len = (data->nbr_files / data->nbr_column);
-	if ((((float)data->nbr_files / (float)data->nbr_column) - (float)data->column_len) > 0.f) 
+	if (nbr_column < 3)
+		ft_printf("ping\n");
+	data->nbr_column = nbr_column;
+	data->column_len = (data->nbr_files / nbr_column);
+	if ((((float)data->nbr_files / (float)nbr_column) - (float)data->column_len) > 0.f) {
 		data->column_len += 1;
-	// size_last_column = data->nbr_files - (data->nbr_column - 1) * data->column_len;
+		nbr_column = (data->nbr_files / data->column_len);
+		if ((((float)data->nbr_files / (float)data->column_len)) - (float)nbr_column > 0.f)
+			nbr_column += 1;
+	}
+	// size_last_column = data->nbr_files - (nbr_column - 1) * data->column_len;
 	file_node = data->files;
-	for (unsigned int col_index = 0; col_index < data->nbr_column; col_index++) {
+	for (unsigned int col_index = 0; col_index < nbr_column; col_index++) {
 		unsigned int	max_path_w = 0, max_inode_w = 0;
 		for (unsigned int file_index = data->column_len * col_index;
 			file_index < (data->column_len * (col_index + 1)) && file_index < data->nbr_files;
@@ -27,11 +34,12 @@ static bool	check_nbr_column(t_data* data) {
 		data->columns_width[col_index * 2] = max_path_w;
 		data->columns_width[col_index * 2 + 1] = max_inode_w;
 		total_width += max_path_w + (max_inode_w ? max_inode_w + 1 : 0) ;
-		if (col_index + 1 != data->nbr_column)
+		if (col_index + 1 != nbr_column)
 			total_width += 2;
 		if (total_width > data->options.tty_width)
 			return (false);
 	}
+	data->nbr_column = nbr_column;
 	return (true);
 }
 
@@ -44,12 +52,12 @@ static int	compute_columns(t_data* data) {
 	min_column_width = (data->options.inode ? data->size_limits.min_inode_w + 1 : 0) + data->size_limits.min_path_w;
 	int	max_nbr_column = data->options.tty_width / min_column_width;
 	// ft_printf("tty width = %u, min_column_width = %u ,max = %u\n", data->tty_width, min_column_width, data->size_limits.max_path_w + data->size_limits.max_inode_w);
-	for (data->nbr_column = max_nbr_column; data->nbr_column > 1; data->nbr_column--) {
+	for (unsigned int nbr_column = max_nbr_column; nbr_column > 1; nbr_column--) {
 		// ft_printf("nbr col = %u\n", data->nbr_column);
-		data->columns_width = malloc(2 * sizeof(unsigned int) * data->nbr_column);
+		data->columns_width = malloc(2 * sizeof(unsigned int) * nbr_column);
 		if (data->columns_width == NULL)
 			return (ERROR_FATAL);
-		if (check_nbr_column(data) == true)
+		if (check_nbr_column(data, nbr_column) == true)
 			break;
 		free(data->columns_width);
 		data->columns_width = NULL;
@@ -70,16 +78,28 @@ char*	ls_format_size(size_t size) {
 	size_t	nwrite, div_size, remain;
 	int	iter = 0;
 
-	for (div_size = size; div_size > 1024; div_size /= 1024) {
+	for (div_size = size; div_size >= 1024; div_size >>= 10) {
 		iter++;
 	}
-	remain = ((size % 1024) * 1000 / 1024) / 100;
-	ft_printf("%y\n", remain);
+	remain = (iter ? size % ((size_t)1 << (iter * 10)) : 0);	
+	if (div_size >= 10 && remain) {
+		remain = 0;
+		div_size += 1;
+	}
+	else if (div_size < 10 && remain) {
+		// ft_printf("remain = %y\n", remain);
+		if (remain > ((((size_t)1 << (10 * iter)) - (((size_t)1 << (10 * iter))) / 10)) - 1) {
+			remain = 0;
+			div_size++;
+		}
+		else
+			remain = ((size % ((size_t)1 << (10 * iter))) * 1000 / ((size_t)1 << (10 * iter))) / 100 + 1;
+	}
+	// ft_printf("%y|%y\n", div_size, remain);
 	nwrite = ft_putunbr_buffer(div_size, formatted_size, 64);
-	if (nwrite == 1) {
+	if (nwrite == 1 && iter) {
 		formatted_size[nwrite++] = '.';
-		div_size = ((size % 1024) * 1000 / 1024) / 100;
-		nwrite += ft_putunbr_buffer(div_size, formatted_size + nwrite, 64 - nwrite);
+		nwrite += ft_putunbr_buffer(remain, formatted_size + nwrite, 64 - nwrite);
 	}
 	switch (iter)
 	{
@@ -179,11 +199,13 @@ static int	print_column(t_data* data) {
 			if (file_nodes[col] == NULL)
 				continue;
 			if (print_file_short((t_file_info*)file_nodes[col]->content, data, \
-					data->columns_width[col * 2], data->columns_width[col * 2 + 1]) < 0) {
+					(col + 1 == data->nbr_column ? 0 : data->columns_width[col * 2]),
+					 data->columns_width[col * 2 + 1]) < 0) {
 				free (file_nodes);
 				return (ERROR_FATAL);
 			}
-			write(1, "  ", 2);
+			if (col + 1 != data->nbr_column)
+				write(1, "  ", 2);
 			file_nodes[col] = file_nodes[col]->next;
 		}
 		write(1, "\n", 1);
@@ -376,7 +398,7 @@ static int	print_lines(t_data* data) {
 				return (ERROR_FATAL);
 		} else {
 			if (print_file_short((t_file_info*)current->content, data,
-				data->size_limits.max_path_w, data->size_limits.max_inode_w))
+				0, data->size_limits.max_inode_w))
 				return (ERROR_FATAL);
 			write(1, "\n", 1);
 		}
