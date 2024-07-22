@@ -160,8 +160,9 @@ int	option_argument_color(t_opts* options, char* arg);
 int	option_set_alias_f(t_opts* options, char* arg) {
 	(void) arg;
 	option_argument_color(options, "none");
-	option_set_filter_all(options, 0);
 	option_set_sort_none(options, 0);
+	option_set_sort_reverse(options, NULL);
+	option_set_row_format(options, NULL);
 	return (0);
 }
 

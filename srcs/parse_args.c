@@ -107,6 +107,7 @@ static t_ls_flag options_map[] = {
 	},
 	[OPT_ALIAS_f]		= (t_ls_flag) {
 		.short_id = 'f',
+		.long_id = "fast",
 		.handler = option_set_alias_f
 	},
 	[OPT_FORCE_COLUMN]	= (t_ls_flag) {

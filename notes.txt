@@ -10,6 +10,7 @@ Format : l, h, color, u, i, time, 1, wX/--width=X, g, G
 	i => show inode column
 	time => specify which time to print and/or use for sorting
 	1 => force single line
+	C => force colon formatting
 	wX / --width=X => manually fix width of columns in chars
 	g => doesn't print user_id in long_listing
 	G => hide group in long listing

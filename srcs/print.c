@@ -9,8 +9,6 @@ static bool	check_nbr_column(t_data* data, unsigned int nbr_column) {
 	unsigned int total_width = 0;
 	t_list*	file_node;
 
-	if (nbr_column < 3)
-		ft_printf("ping\n");
 	data->nbr_column = nbr_column;
 	data->column_len = (data->nbr_files / nbr_column);
 	if ((((float)data->nbr_files / (float)nbr_column) - (float)data->column_len) > 0.f) {
@@ -61,6 +59,7 @@ static int	compute_columns(t_data* data) {
 		if (check_nbr_column(data, nbr_column) == true)
 			break;
 		free(data->columns_width);
+		data->nbr_column = 1;
 		data->columns_width = NULL;
 	}
 	if (data->nbr_column == 1)
