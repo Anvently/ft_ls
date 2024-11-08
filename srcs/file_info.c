@@ -489,7 +489,7 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 	t_list*			add_targets = NULL;
 	DIR*			dir = NULL;
 	struct dirent*	dir_entry = NULL;
-	int				ret = 0, res, dir_fd = -1;
+	int				ret = 0, res = 0, dir_fd = -1;
 
 	dir = opendir(dir_info->path);
 	if (dir == NULL)
@@ -503,7 +503,7 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 			ret = res;
 			if (res < 0)
 				break;
-			if (file_info->stat_failed == false)
+			if (!file_info)
 				continue;
 		}
 		ls_compute_file_width(file_info, data);
@@ -514,7 +514,10 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 			&& (ret = append_recursive_subfolder(current_node, &add_targets, file_info, &data->options)))
 			break;
 	}
-	if ((ret < 0 || res < 0) && file_info)
+	if (!dir_entry && errno) {
+		ls_error_read(dir_info->path, errno);
+	}
+	else if ((ret < 0 || res < 0) && file_info)
 		ls_free_file_info(file_info);
 	else if (errno && ret >= 0) {
 		ft_dprintf(2, "Unknown exception: %d: %s", errno, strerror(errno));

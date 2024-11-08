@@ -149,7 +149,7 @@ static inline int	print_file_name(t_file_info* file_info, unsigned int width, t_
 		if (ft_printf("\033[%sm%s\033[%sm%*s",
 			ls_color_get(file_info->path, file_info->stat.stx_mode,
 				file_info->stat.stx_nlink, file_info->orphan, data),
-			file_info->path, data->colors.reset, (width ? width - ft_strlen(file_info->path) : 0), "") < 0)
+			file_info->path, data->colors.reset, (width ? width - (int)ft_strlen(file_info->path) : 0), "") < 0)
 			return (ERROR_FATAL);
 	} else {
 		if (ft_printf("%-*s", width, file_info->path) < 0)

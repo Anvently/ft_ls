@@ -195,6 +195,7 @@ int	ls_error_option_missing_argument(const char* option);
 int	ls_error_option_extra_argument(const char* option, int end);
 int	ls_error_no_access(const char* path, int errno);
 int	ls_error_open(const char* path, int errno);
+int	ls_error_read(const char* path, int errno);
 int	ls_error_invalid_width(const char* width);
 int	ls_error_invalid_argument(const char* option, const char* arg, const char*** valids);
 int	ls_error_ambiguous_argument(const char* option, const char* arg, const char*** valids);
