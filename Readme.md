@@ -27,6 +27,7 @@
 - **--time=[atime (default); mtime; ctime; btime]** => set the timestamp used when sorting files per time or the timestamp printed when using long listing
 - **u** => enable time sorting and use access time instead of modification time (equivalent to ***-t*** + ***--time=mtime***)
 - **L** / **--dereference** => display information about files pointed by symlink instead of information about the symlinks themselves
+- **H** / **--dereference-command-line** => dereference symbolic link present in the command line arguments (this is the default behavior but a long listing argument will disable this default behaviour)
 
 # Sorting flags
 

@@ -220,16 +220,43 @@ static void	assign_min_max(unsigned int* dest_max, unsigned int* dest_min, unsig
 		*dest_min = value;
 }
 
+/// @brief Retrieve informations about the user and group of the file.
+/// Failure to retrieve the informations will not result as an error.
+/// Minimum and maximum widths for user and group column are computed here.
+/// @param file_info 
+/// @param data 
+/// @return ```0``` or ```-1``` if allocation eror.
 static int	retrieve_guid_info(t_file_info* file_info, t_data* data) {
+	struct passwd*	s_uid;
+	struct group*	s_gid;
+
+	if (file_info->stat_failed)
+		return (0);
 	if (data->options.statx_mask & STATX_GID) {
-		file_info->gid_ptr = getgrgid(file_info->stat.stx_gid);
-		if (file_info->gid_ptr == NULL)
-			return (ERROR_SYS);
+		s_gid = getgrgid(file_info->stat.stx_gid);
+		if (s_gid == NULL) {
+			assign_min_max(&data->size_limits.max_group_w, &data->size_limits.min_group_w, 
+				len_nb(0, (size_t) file_info->stat.stx_gid));
+		} else {
+			file_info->gr_name = ft_strdup(s_gid->gr_name);
+			if (file_info->gr_name == NULL)
+				return (ERROR_FATAL);
+			assign_min_max(&data->size_limits.max_group_w, &data->size_limits.min_group_w, 
+				ft_strlen(file_info->gr_name));
+		}
 	}
 	if (data->options.statx_mask & STATX_UID) {
-		file_info->uid_ptr = getpwuid(file_info->stat.stx_uid);
-		if (file_info->uid_ptr == NULL)
-			return (ERROR_SYS);
+		s_uid = getpwuid(file_info->stat.stx_uid);
+		if (s_uid == NULL) {
+			assign_min_max(&data->size_limits.max_user_w, &data->size_limits.min_user_w, 
+				len_nb(0, (size_t) file_info->stat.stx_uid));
+		} else {
+			file_info->pw_name = ft_strdup(s_uid->pw_name);
+			if (file_info->pw_name == NULL)
+				return (ERROR_FATAL);
+			assign_min_max(&data->size_limits.max_user_w, &data->size_limits.min_user_w, 
+				ft_strlen(file_info->pw_name));
+		}
 	}
 	return (0);
 }
@@ -240,7 +267,7 @@ static int	retrieve_guid_info(t_file_info* file_info, t_data* data) {
 /// @param file_info 
 /// @param options 
 /// @return 
-static void	ls_compute_file_width(t_file_info* file_info, t_data* data) {
+static int	ls_compute_file_width(t_file_info* file_info, t_data* data) {
 	file_info->path_w = (unsigned int)ft_strlen(file_info->path);
 	assign_min_max(&data->size_limits.max_path_w, &data->size_limits.min_path_w, file_info->path_w);
 	if (data->options.inode) {
@@ -248,15 +275,10 @@ static void	ls_compute_file_width(t_file_info* file_info, t_data* data) {
 		assign_min_max(&data->size_limits.max_inode_w, &data->size_limits.min_inode_w, file_info->inode_w);
 	}
 	if (data->options.format_by == FORMAT_BY_COLUMN)
-		return;
-	retrieve_guid_info(file_info, data);
+		return (0);
+	if (retrieve_guid_info(file_info, data) < 0)
+		return (ERROR_FATAL);
 	data->total_size += (data->options.human_readable ? file_info->stat.stx_size : 512 * file_info->stat.stx_blocks);
-	if (data->options.statx_mask & STATX_UID)
-		assign_min_max(&data->size_limits.max_user_w, &data->size_limits.min_user_w, 
-			(file_info->stat_failed ? 1 : ft_strlen(file_info->uid_ptr->pw_name)));
-	if (data->options.statx_mask & STATX_GID)
-		assign_min_max(&data->size_limits.max_group_w, &data->size_limits.min_group_w, 
-			(file_info->stat_failed ? 1 : ft_strlen(file_info->gid_ptr->gr_name)));
 	assign_min_max(&data->size_limits.max_nlink_w, &data->size_limits.min_nlink_w, 
 		(file_info->stat_failed ? 1 : len_nb(0, file_info->stat.stx_nlink)));
 	if (data->options.human_readable)
@@ -265,6 +287,7 @@ static void	ls_compute_file_width(t_file_info* file_info, t_data* data) {
 	else
 		assign_min_max(&data->size_limits.max_size_w, &data->size_limits.min_size_w, 
 			(file_info->stat_failed ? 1 : len_nb(0, (unsigned long)file_info->stat.stx_size)));
+	return (0);
 }
 
 void	ls_free_file_info(void* ptr) {
@@ -276,6 +299,10 @@ void	ls_free_file_info(void* ptr) {
 		free(file_info->path);
 	if (file_info->ln_target_filename)
 		free(file_info->ln_target_filename);
+	if (file_info->pw_name)
+		free(file_info->pw_name);
+	if (file_info->gr_name)
+		free(file_info->gr_name);
 	free(file_info);
 }
 
@@ -324,6 +351,12 @@ static int	get_link(int dir_fd, t_file_info* file_info) {
 	return (0);
 }
 
+/// @brief 
+/// @param dir_fd 
+/// @param file_info 
+/// @param data 
+/// @return ```1``` if the link could not correctly by dereferenced (file structure is still valid)
+/// ```-1``` if allocation error
 static int	handle_symlink(int dir_fd, t_file_info* file_info, t_data* data) {
 	int	old_errno = errno;
 	static struct statx empty_struct, *dest;
@@ -333,13 +366,13 @@ static int	handle_symlink(int dir_fd, t_file_info* file_info, t_data* data) {
 		return (ERROR_FATAL);
 	if (data->options.deref_symlink)
 		dest = &file_info->stat;
-	if (statx(dir_fd, file_info->path, 0, data->options.statx_mask, dest) < 0) {
+	if (statx(dir_fd, file_info->path, data->options.statx_flags, data->options.statx_mask, dest) < 0) {
 		file_info->orphan = true;
 		if (data->options.deref_symlink) {
 			ls_error_no_access(file_info->path, errno);
 			ft_memset(&file_info->stat, 0, sizeof(struct statx));
-			file_info->stat.stx_mode = __S_IFLNK;
 			file_info->stat_failed = true;
+			file_info->stat.stx_mode = __S_IFLNK;
 			return (ERROR_SYS);
 		}
 		errno = old_errno;
@@ -352,20 +385,27 @@ static int	handle_symlink(int dir_fd, t_file_info* file_info, t_data* data) {
 
 }
 
-/// @brief Return an allocated ```file_info``` struct
+/// @brief Return an allocated ```file_info``` struct. If a first statx() call fails
+/// as we were trying to dereference symlink, another attempt is made without dereferencing symlink.
 /// @param path 
 /// @param file_info 
 /// @return ```1``` if can't access to path
 /// ```-1``` if allocation error
 static int	get_file_info(const char* path, t_file_info** file_info, t_data* data) {
 	int	ret = 0;
+	unsigned int statx_flags = data->options.statx_flags;
 
 	*file_info = ft_calloc(1, sizeof(t_file_info));
 	if (*file_info == NULL)
 		return (ERROR_FATAL);
-	if (statx(AT_FDCWD, path, AT_SYMLINK_NOFOLLOW, data->options.statx_mask, &(*file_info)->stat) < 0) {
-		free(*file_info);
-		return (ls_error_no_access(path, errno));
+	if (data->options.deref_symlink_argument == false)
+		statx_flags |= AT_SYMLINK_NOFOLLOW;
+	if (statx(AT_FDCWD, path, statx_flags, data->options.statx_mask, &(*file_info)->stat) < 0) {
+		if ((statx_flags & AT_SYMLINK_NOFOLLOW) || (!(statx_flags & AT_SYMLINK_NOFOLLOW) &&
+			statx(AT_FDCWD, path, data->options.statx_flags | AT_SYMLINK_NOFOLLOW, data->options.statx_mask, &(*file_info)->stat) < 0)) {
+			free(*file_info);
+			return (ls_error_no_access(path, errno));
+		}
 	}
 	if (((*file_info)->path = ft_strdup(path)) == NULL) {
 		free(*file_info);
@@ -387,27 +427,31 @@ static int	get_file_info(const char* path, t_file_info** file_info, t_data* data
 /// ```-1``` if allocation error
 static int	get_file_info_from_dir(int dir_fd, struct dirent* dir_entry, t_file_info** file_info, t_data* data) {
 	int	ret = 0;
+	// unsigned int statx_flags = data->options.statx_flags;
 
+	// if (data->options.deref_symlink == false)
+	// 	statx_flags |= AT_SYMLINK_NOFOLLOW;
 	*file_info = ft_calloc(1, sizeof(t_file_info));
 	if (*file_info == NULL)
 		return (ERROR_FATAL);
 	ft_strlcpy(&(*file_info)->filename[0], &dir_entry->d_name[0], 256);
 	(*file_info)->path = &(*file_info)->filename[0];
-	if (data->options.statx_mask != LS_STATX_DFT_MASK) {
-		if (statx(dir_fd, &dir_entry->d_name[0], AT_SYMLINK_NOFOLLOW, data->options.statx_mask, &(*file_info)->stat) < 0) {
+	(*file_info)->stat.stx_ino = dir_entry->d_ino;
+	(*file_info)->stat.stx_mode = DTTOIF(dir_entry->d_type);
+	if (S_ISLNK((*file_info)->stat.stx_mode) && data->options.check_symlink) {
+		if ((ret = handle_symlink(dir_fd, *file_info, data)) < 0) {
+			ls_free_file_info(*file_info);
+			*file_info = NULL;
+			return (ERROR_FATAL);
+		}
+	}
+	else if (data->options.statx_mask != LS_STATX_DFT_MASK) {
+		if (statx(dir_fd, &dir_entry->d_name[0], data->options.statx_flags | AT_SYMLINK_NOFOLLOW,
+				data->options.statx_mask, &(*file_info)->stat) < 0) {
 			free(*file_info);
 			*file_info = NULL;
 			return (ls_error_no_access(&dir_entry->d_name[0], errno));	
 		}
-	} else {
-		(*file_info)->stat.stx_ino = dir_entry->d_ino;
-		(*file_info)->stat.stx_mode = DTTOIF(dir_entry->d_type);
-	}
-	if (S_ISLNK((*file_info)->stat.stx_mode) && data->options.check_symlink
-		&& (ret = handle_symlink(dir_fd, *file_info, data)) < 0) {
-		ls_free_file_info(*file_info);
-		*file_info = NULL;
-		return (ERROR_FATAL);
 	}
 	return (ret);
 }
@@ -436,8 +480,32 @@ int	ls_retrieve_arg_file(const char* path, t_data* data) {
 	}
 	if (destination == &data->files)
 		data->nbr_files++;
-	if (destination == &data->files)
-		ls_compute_file_width(file_info, data);
+	if (destination == &data->files && ls_compute_file_width(file_info, data) < 0)
+		return (ERROR_FATAL);
+	return (0);
+}
+
+static int	copy_file_info(t_file_info* dest, t_file_info *src) {
+	ft_memcpy(dest, src, sizeof(t_file_info));
+	dest->ln_target_filename = NULL;
+	dest->pw_name = NULL;
+	dest->gr_name = NULL;
+	dest->path = NULL;
+	if (src->ln_target_filename) {
+		dest->ln_target_filename = ft_strdup(src->ln_target_filename);
+		if (dest->ln_target_filename == NULL)
+			return (ERROR_FATAL);
+	}
+	if (src->gr_name) {
+		dest->gr_name = ft_strdup(src->gr_name);
+		if (dest->gr_name == NULL)
+			return (ERROR_FATAL);
+	}
+	if (src->pw_name) {
+		dest->pw_name = ft_strdup(src->pw_name);
+		if (dest->pw_name == NULL)
+			return (ERROR_FATAL);
+	}
 	return (0);
 }
 
@@ -448,12 +516,15 @@ static int	append_recursive_subfolder(t_list* current_node, t_list** dest, t_fil
 	target_info = malloc(sizeof(t_file_info));
 	if (target_info == NULL)
 		return (ERROR_FATAL);
-	ft_memcpy(target_info, dir_info, sizeof(t_file_info));
+	if (copy_file_info(target_info, dir_info) < 0) {
+		ls_free_file_info(target_info);
+		return (ERROR_FATAL);
+	}
 	parent_path_len = ft_strlen(((t_file_info*)current_node->content)->path);
 	dir_name_len = ft_strlen(&dir_info->filename[0]);
 	target_info->path = malloc(parent_path_len + dir_name_len + 2);
 	if (target_info->path == NULL) {
-		free(target_info);
+		ls_free_file_info(target_info);
 		return (ERROR_FATAL);
 	}
 	ft_strlcpy(target_info->path, ((t_file_info*)current_node->content)->path, parent_path_len + 1);
@@ -506,7 +577,8 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 			if (!file_info)
 				continue;
 		}
-		ls_compute_file_width(file_info, data);
+		if ((res = ls_compute_file_width(file_info, data) < 0))
+			break;
 		if ((res = push_file_info(file_info, &data->files, &data->options)))
 			break;
 		data->nbr_files++;

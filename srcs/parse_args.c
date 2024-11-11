@@ -19,6 +19,7 @@ int	option_set_recursive(t_opts* options, char*);
 int	option_set_alias_f(t_opts* options, char*);
 int	option_set_column(t_opts* options, char*);
 int	option_deref_symlink(t_opts* options, char*);
+int	option_deref_symlink_argument(t_opts* options, char* arg);
 int	option_argument_sort(t_opts* options, char* arg);
 int	option_argument_time(t_opts* options, char* arg);
 int	option_only_group(t_opts* options, char* arg);
@@ -118,6 +119,11 @@ static t_ls_flag options_map[] = {
 		.short_id = 'L',
 		.long_id = "dereference",
 		.handler = option_deref_symlink
+	},
+	[OPT_DEREF_LINK_ARGUMENT]	= (t_ls_flag) {
+		.short_id = 'H',
+		.long_id = "dereference-command-line",
+		.handler = option_deref_symlink_argument
 	},
 	[OPT_ONLY_GROUP]	= (t_ls_flag) {
 		.short_id = 'g',
@@ -269,12 +275,14 @@ static int	ls_parse_retrieve_options(int nbr, char** args, t_opts* options) {
 /// @return ```2``` if flag error cause by user.
 /// ```1``` if at least one file was inaccessibe
 /// ```-1``` if fatal error
-int	ls_parse_args(int nbr, char** args, t_data* data) {
+int	ls_parse_args(int nbr, char** args, t_data* data, char** env) {
 	int		ret = 0;
 
 	if ((ret = ls_parse_retrieve_options(nbr, args, &data->options)))
 		return (ret);
 	ls_reset_limits(data);
+	if (data->options.colorize && (ret = ls_parse_colors(data, env)))
+		return (-1);
 	for (int i = 0; i < nbr; i++) {
 		if (args[i] == NULL)
 			continue;	
@@ -284,7 +292,6 @@ int	ls_parse_args(int nbr, char** args, t_data* data) {
 				break;
 			case -1:
 				return (-1);
-				break;
 		}
 	}
 	return (ret);

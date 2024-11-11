@@ -177,6 +177,7 @@ int	ls_parse_colors(t_data* data, char** env) {
 		return (ERROR_SYS);
 	else if (colors[0] == '\0') {
 		free (colors);
+		data->options.colorize = COLOR_NONE;
 		return (0);
 	}
 	data->colors.ls_colors = ft_split(colors, ':');

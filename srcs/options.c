@@ -37,6 +37,7 @@ int	option_set_long_listing(t_opts* options, char* arg) {
 	if (options->time_by == TIME_BY_MTIME)
 		options->statx_mask |= STATX_MTIME;
 	options->check_symlink = true;
+	options->deref_symlink_argument = false;
 	return (0);
 }
 
@@ -139,6 +140,13 @@ int	option_deref_symlink(t_opts* options, char* arg) {
 	(void) arg;
 	options->check_symlink = true;
 	options->deref_symlink = true;
+	options->deref_symlink_argument = true;
+	return (0);
+}
+
+int option_deref_symlink_argument(t_opts* options, char* arg) {
+	(void) arg;
+	options->deref_symlink_argument = true;
 	return (0);
 }
 
@@ -271,8 +279,11 @@ int	option_argument_color(t_opts* options, char* arg) {
 
 int	option_set_column(t_opts* options, char* arg) {
 	(void) arg;
-	if (options->long_listing == false)
-		options->format_by = FORMAT_BY_COLUMN;
+	options->format_by = FORMAT_BY_COLUMN;
+	options->long_listing = false;
+	if (options->deref_symlink == false)
+		options->check_symlink = false;
+	options->statx_mask &= ~(STATX_NLINK | STATX_UID | STATX_GID);
 	return (0);
 };
 

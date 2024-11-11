@@ -311,8 +311,13 @@ static inline int	print_file_user(t_file_info* file_info, unsigned int width) {
 			return (ERROR_FATAL);
 		return (0);
 	}
-	if (ft_printf("%-*s ", width, file_info->uid_ptr->pw_name) < 0)
-		return (ERROR_FATAL);
+	if (file_info->pw_name) {
+		if (ft_printf("%-*s ", width, file_info->pw_name) < 0)
+			return (ERROR_FATAL);
+	} else {
+		if (ft_printf("%*u ", width, file_info->stat.stx_uid) < 0)
+			return (ERROR_FATAL);
+	}
 	return (0);
 }
 
@@ -322,8 +327,13 @@ static inline int	print_file_group(t_file_info* file_info, unsigned int width) {
 			return (ERROR_FATAL);
 		return (0);
 	}
-	if (ft_printf("%-*s ", width, file_info->gid_ptr->gr_name) < 0)
-		return (ERROR_FATAL);
+	if (file_info->gr_name) {
+		if (ft_printf("%-*s ", width, file_info->gr_name) < 0)
+			return (ERROR_FATAL);
+	} else {
+		if (ft_printf("%-*u ", width, file_info->stat.stx_gid) < 0)
+			return (ERROR_FATAL);
+	}
 	return (0);
 }
 
@@ -397,6 +407,8 @@ static int	print_file_long(t_file_info* file_info, t_data* data) {
 		return (ERROR_FATAL);
 	if (print_file_nlink(file_info, data->size_limits.max_nlink_w))
 		return (ERROR_FATAL);
+	// ft_printf("max uid = %u\n", data->size_limits.max_user_w);
+	// ft_printf("max gid = %u\n", data->size_limits.max_group_w);
 	if ((data->options.statx_mask & STATX_UID) && print_file_user(file_info, data->size_limits.max_user_w))
 		return (ERROR_FATAL);
 	if ((data->options.statx_mask & STATX_GID) && print_file_group(file_info, data->size_limits.max_group_w))

@@ -33,7 +33,8 @@ static int	init_data(t_data* data, char** env) {
 	char*	env_width;
 
 	data->options.statx_mask = LS_STATX_DFT_MASK;
-	// data->options.statx_flags = AT_SYMLINK_NOFOLLOW;
+	data->options.statx_flags = AT_STATX_SYNC_AS_STAT;
+	data->options.deref_symlink_argument = true;
 	if (isatty(STDOUT_FILENO)) {
 		data->options.is_tty = true;
 		if (ioctl(0, TIOCGWINSZ, &w) < 0)
@@ -62,12 +63,10 @@ int	main(int argc, char **argv, char **env) {
 
 	if (init_data(&data, env))
 		return (ERROR_FATAL);
-	ret = ls_parse_args(argc - 1, argv + 1, &data);
+	ret = ls_parse_args(argc - 1, argv + 1, &data, env);
 	if ((ret < 0 || ret > 1) || (ret == 1 && !data.files && !data.targets))
 		return (free_all(ret, &data));
 	if (!data.files && !data.targets && (ret = ls_retrieve_arg_file(".", &data)))
-		return (free_all(ret, &data));
-	if (data.options.colorize && (ret = ls_parse_colors(&data, env)))
 		return (free_all(ret, &data));
 	ret = ls_print(&data);
 	// ls_print_options(&data.options);

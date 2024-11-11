@@ -10,6 +10,7 @@
 # include <grp.h>
 # include <pwd.h>
 
+// @todo STATX_MODE should be required
 # define LS_STATX_DFT_MASK (STATX_TYPE | STATX_MODE)
 
 
@@ -86,11 +87,13 @@ typedef struct s_options
 	enum FILTER_FILE	filter;
 	bool				is_tty;
 	unsigned int		statx_mask;
-	// unsigned int		statx_flags;
+	// unsigned int		statx_flag_argument;
+	// unsigned int		statx_flag_dir_entry; //whether or not it's needed to dere
+	unsigned int		statx_flags;
 	bool				retrieve_xattr;
 	bool				check_symlink; //Orphan symlink will be checked
-	bool				deref_symlink; //Data used will be dereferenced
-										//symlink
+	bool				deref_symlink; //Data used will retrieved from dereferenced symlink
+	bool				deref_symlink_argument; //Force symlink given as arguments to be traversed (by default)
 } t_opts;
 
 typedef struct s_list t_list;
@@ -116,7 +119,8 @@ enum	OPTIONS {
 			OPT_RECURSIVE, // -R
 			OPT_ALIAS_f, // => --color=none + -a + -U
 			OPT_FORCE_COLUMN,
-			OPT_DEREF_LINK,
+			OPT_DEREF_LINK, // -L / --dereference
+			OPT_DEREF_LINK_ARGUMENT,  // -H / --dereference-command-line
 			OPT_ONLY_GROUP,
 			OPT_HIDE_GROUP,
 			NBR_OPTIONS
@@ -147,8 +151,8 @@ typedef struct s_ls_file_info {
 	unsigned int	inode_w;
 	bool			orphan;
 	bool			stat_failed;
-	struct passwd*	uid_ptr;
-	struct group*	gid_ptr;
+	char			*gr_name;
+	char			*pw_name;
 	char*			ln_target_filename;
 	unsigned short	ln_target_mode;
 	unsigned int	ln_target_nlink;
@@ -201,7 +205,7 @@ int	ls_error_invalid_argument(const char* option, const char* arg, const char***
 int	ls_error_ambiguous_argument(const char* option, const char* arg, const char*** valids);
 int	ls_error_unparsable_color(char* color);
 
-int	ls_parse_args(int nbr, char** args, t_data* data);
+int	ls_parse_args(int nbr, char** args, t_data* data, char** env);
 int	ls_retrieve_arg_file(const char* path, t_data* data);
 int	ls_retrieve_dir_files(t_list* current_node, t_data* data);
 
