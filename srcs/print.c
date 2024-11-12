@@ -313,11 +313,11 @@ static inline int	print_file_xattr(t_file_info* file_info, unsigned int width) {
 
 static inline int	print_file_nlink(t_file_info* file_info, unsigned int width) {
 	if (file_info->stat_failed) {
-		if (ft_printf("%-*c ", width, '?') < 0)
+		if (ft_printf("%*c ", width, '?') < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
-	if (ft_printf("%-*d ", width, file_info->stat.stx_nlink) < 0)
+	if (ft_printf("%*d ", width, file_info->stat.stx_nlink) < 0)
 		return (ERROR_FATAL);
 	return (0);
 }
@@ -368,8 +368,8 @@ static inline int	print_file_size(t_file_info* file_info, unsigned int width, bo
 }
 
 static inline int	print_file_date(t_file_info* file_info, enum TIME_BY time_by) {
-	const char* str_date;
-	signed long long*	time;
+	char* str_date;
+	signed long long*	time_ptr;
 
 	if (file_info->stat_failed) {
 		if (ft_printf("%*c ", 12, '?') < 0)
@@ -379,24 +379,28 @@ static inline int	print_file_date(t_file_info* file_info, enum TIME_BY time_by) 
 	switch (time_by)
 	{
 		case TIME_BY_ATIME:
-			time = &file_info->stat.stx_atime.tv_sec;
+			time_ptr = &file_info->stat.stx_atime.tv_sec;
 			break;
 
 		case TIME_BY_MTIME:
-			time = &file_info->stat.stx_mtime.tv_sec;
+			time_ptr = &file_info->stat.stx_mtime.tv_sec;
 			break;
 		
 		case TIME_BY_CTIME:
-			time = &file_info->stat.stx_ctime.tv_sec;
+			time_ptr = &file_info->stat.stx_ctime.tv_sec;
 			break;
 
 		case TIME_BY_BTIME:
-			time = &file_info->stat.stx_btime.tv_sec;
+			time_ptr = &file_info->stat.stx_btime.tv_sec;
 			break;
 	}
-	str_date = ctime((const time_t*)time);
+	str_date = ctime((const time_t*)time_ptr);
 	if (str_date == NULL)
 		return (ERROR_FATAL);
+	if ((time(NULL) - *time_ptr) > (60 * 60 * 24 * 30 * 6)) {
+		ft_memmove((void*)(str_date + 4 + 8), (const void*)(str_date + 4 + 16), 4);
+		str_date[11] = ' ';
+	}
 	write(1, str_date + 4, ft_strlen(str_date) - 4 - 1 - 5 - 3);
 	write(1, " ", 1);
 	return (0);

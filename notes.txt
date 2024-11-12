@@ -66,7 +66,6 @@ Token element :
 TODO or not :
 	- replace control character in tty with '?' (test first what happens as such)
 	- For date : check time limit to decide to print hour vs year
-	- implement -H ?
 
 https://www.linux.com/training-tutorials/file-types-linuxunix-explained-detail/
 https://www.bigsoft.co.uk/blog/2008/04/11/configuring-ls_colors
