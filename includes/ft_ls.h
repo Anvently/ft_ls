@@ -13,6 +13,7 @@
 // @todo STATX_MODE should be required
 # define LS_STATX_DFT_MASK (STATX_TYPE | STATX_MODE)
 
+# define BLOCK_SIZE 512
 
 enum	SORT_BY {SORT_BY_NONE = -1,
 				SORT_BY_ALPHA,

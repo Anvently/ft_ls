@@ -278,7 +278,7 @@ static int	ls_compute_file_width(t_file_info* file_info, t_data* data) {
 		return (0);
 	if (retrieve_guid_info(file_info, data) < 0)
 		return (ERROR_FATAL);
-	data->total_size += (data->options.human_readable ? file_info->stat.stx_size : 512 * file_info->stat.stx_blocks);
+	data->total_size += BLOCK_SIZE * file_info->stat.stx_blocks;
 	assign_min_max(&data->size_limits.max_nlink_w, &data->size_limits.min_nlink_w, 
 		(file_info->stat_failed ? 1 : len_nb(0, file_info->stat.stx_nlink)));
 	if (data->options.human_readable)

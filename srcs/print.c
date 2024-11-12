@@ -197,12 +197,13 @@ static int	print_column(t_data* data) {
 			if (file_nodes[col] == NULL)
 				continue;
 			if (print_file_short((t_file_info*)file_nodes[col]->content, data, \
-					(col + 1 == data->nbr_column ? 0 : data->columns_width[col * 2]),
+					((col + 1 == data->nbr_column || file_nodes[col + 1] == NULL) ?
+						0 : data->columns_width[col * 2]),
 					 data->columns_width[col * 2 + 1]) < 0) {
 				free (file_nodes);
 				return (ERROR_FATAL);
 			}
-			if (col + 1 != data->nbr_column)
+			if (col + 1 != data->nbr_column && file_nodes[col + 1])
 				write(1, "  ", 2);
 			file_nodes[col] = file_nodes[col]->next;
 		}
@@ -507,20 +508,22 @@ int	ls_print(t_data* data) {
 	}
 	while (data->targets) {
 		clear_files(data);
-		if (nbr_iter)
-			write(1, "\n", 1);
-		if ((nbr_iter || data->targets->next)
-			&& ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path) < 0)
-			return (ERROR_FATAL);
 		res = ls_retrieve_dir_files(data->targets, data);
-		if (res < 0)
+		if (res == 0) {
+			if (nbr_iter)
+				write(1, "\n", 1);
+			if ((nbr_iter || data->targets->next)
+				&& ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path) < 0)
+				return (ERROR_FATAL);
+			if (data->options.long_listing && print_total_size(data))
+				return (ERROR_FATAL);
+			if (print_files(data))
+				return (ERROR_FATAL);
+		}
+		else if (res < 0)
 			return (ERROR_FATAL);
 		else if (res > 0)
 			ret = 1;
-		if (data->options.long_listing && print_total_size(data))
-			return (ERROR_FATAL);
-		if (print_files(data))
-			return (ERROR_FATAL);
 		ft_lstpop_front(&data->targets, &ls_free_file_info);
 		nbr_iter++;
 	}
