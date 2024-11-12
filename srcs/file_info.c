@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <sys/sysmacros.h>
 #include <string.h>
+#include <sys/xattr.h>
 #include <pwd.h>
 
 // /// @brief 
@@ -216,7 +217,7 @@ static unsigned int	len_nb(size_t len,  unsigned long nb)
 static void	assign_min_max(unsigned int* dest_max, unsigned int* dest_min, unsigned int value) {
 	if (value > *dest_max)
 		*dest_max = value;
-	if (value < *dest_min)
+	if (dest_min && value < *dest_min)
 		*dest_min = value;
 }
 
@@ -261,21 +262,51 @@ static int	retrieve_guid_info(t_file_info* file_info, t_data* data) {
 	return (0);
 }
 
+/// @brief Check for selinux extended security, acl attribute or any other attribute.
+/// @param file_info 
+/// @param data 
+/// @return 
+static int	check_file_xattr(t_file_info* file_info, t_data* data) {
+	static char	buffer[256] = {0};
+	int	old_errno = errno, size, i;
+
+	if (S_ISLNK(file_info->stat.stx_mode) && data->options.deref_symlink == false) {
+		if (lgetxattr(file_info->path, "security.selinux", NULL, 0) > 0)
+			file_info->has_extended_security = true;
+	} else {
+		size = listxattr(file_info->path, &buffer[0], 256);
+		for (i = 0; i < size; i += ft_strlen(&buffer[0] + i) + 1) {
+			if (ft_strcmp("security.selinux", &buffer[0] + i) == 0)
+				file_info->has_extended_security = true;
+			else if (ft_strcmp("system.posix_acl_access", &buffer[0] + i) == 0)
+				file_info->has_acl = true;
+			else
+				file_info->has_xattr = true;
+		}
+	}
+	errno = old_errno;
+	return (0);
+}
+
 /// @brief Calculate the nbr of characters required to print the given
 /// entry, update ```file_info``` and check the current
 /// minimum and maximum widths
 /// @param file_info 
 /// @param options 
 /// @return 
-static int	ls_compute_file_width(t_file_info* file_info, t_data* data) {
+static int	ls_check_extra_infos(t_file_info* file_info, t_data* data) {
 	file_info->path_w = (unsigned int)ft_strlen(file_info->path);
 	assign_min_max(&data->size_limits.max_path_w, &data->size_limits.min_path_w, file_info->path_w);
 	if (data->options.inode) {
 		file_info->inode_w = len_nb(0, (unsigned long)file_info->stat.stx_ino);
 		assign_min_max(&data->size_limits.max_inode_w, &data->size_limits.min_inode_w, file_info->inode_w);
 	}
-	if (data->options.format_by == FORMAT_BY_COLUMN)
+	if (data->options.long_listing == false)
 		return (0);
+	if (check_file_xattr(file_info, data) < 0)
+		return (ERROR_FATAL);
+	assign_min_max(&data->size_limits.max_xattr_w, NULL,
+		file_info->has_extended_security + file_info->has_acl + file_info->has_xattr);
 	if (retrieve_guid_info(file_info, data) < 0)
 		return (ERROR_FATAL);
 	data->total_size += BLOCK_SIZE * file_info->stat.stx_blocks;
@@ -413,6 +444,7 @@ static int	get_file_info(const char* path, t_file_info** file_info, t_data* data
 	}
 	if (S_ISLNK((*file_info)->stat.stx_mode) && data->options.check_symlink)
 		ret = handle_symlink(AT_FDCWD, *file_info, data);
+	//check file xattr here ? (if long listing)
 	if (ret)
 		ls_free_file_info(*file_info);
 	return (ret);
@@ -444,8 +476,10 @@ static int	get_file_info_from_dir(int dir_fd, struct dirent* dir_entry, t_file_i
 			*file_info = NULL;
 			return (ERROR_FATAL);
 		}
+		if (data->options.deref_symlink == true)
+			return (ret);
 	}
-	else if (data->options.statx_mask != LS_STATX_DFT_MASK) {
+	if (data->options.statx_mask != LS_STATX_DFT_MASK) {
 		if (statx(dir_fd, &dir_entry->d_name[0], data->options.statx_flags | AT_SYMLINK_NOFOLLOW,
 				data->options.statx_mask, &(*file_info)->stat) < 0) {
 			free(*file_info);
@@ -480,7 +514,7 @@ int	ls_retrieve_arg_file(const char* path, t_data* data) {
 	}
 	if (destination == &data->files)
 		data->nbr_files++;
-	if (destination == &data->files && ls_compute_file_width(file_info, data) < 0)
+	if (destination == &data->files && ls_check_extra_infos(file_info, data) < 0)
 		return (ERROR_FATAL);
 	return (0);
 }
@@ -577,7 +611,7 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 			if (!file_info)
 				continue;
 		}
-		if ((res = ls_compute_file_width(file_info, data) < 0))
+		if ((res = ls_check_extra_infos(file_info, data) < 0))
 			break;
 		if ((res = push_file_info(file_info, &data->files, &data->options)))
 			break;

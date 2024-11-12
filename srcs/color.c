@@ -199,16 +199,12 @@ static char*	ls_color_get_by_extension(char* filename, t_data* data) {
 	for (color = *color_strs; *color_strs; color = *color_strs++) {
 		if (color[0] != '*')
 			continue;
-		value = ft_strchr(color + 1, '=');
+		value = ft_strchr(color, '=');
 		if (!value++)
 			continue;
-		*(value - 1) = '\0';
 		extension_len = (value - 1) - (color + 1);
-		if (ft_strncmp_rev(filename, color + 1, extension_len) == 0) {
-			*(value - 1) = '=';
+		if (ft_strncmp_rev(filename, color + 1, extension_len) == 0)
 			return (value);
-		}
-		*(value - 1) = '=';
 	}
 	return (data->colors.reset);
 }

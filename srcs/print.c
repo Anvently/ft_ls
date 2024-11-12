@@ -214,7 +214,7 @@ static int	print_column(t_data* data) {
 }
 
 static int	print_file_mode(t_file_info* file_info) {
-	char	output[12] = "---------- ";
+	char	output[11] = "----------";
 
 	switch (file_info->stat.stx_mode & __S_IFMT)
 	{
@@ -251,7 +251,7 @@ static int	print_file_mode(t_file_info* file_info) {
 			break;
 	}
 	if (file_info->stat_failed) {
-		if (ft_printf("%c????????? ", output[0]) < 0)
+		if (ft_printf("%c?????????", output[0]) < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
@@ -291,7 +291,23 @@ static int	print_file_mode(t_file_info* file_info) {
 		else
 			output[3] = 'T';
 	}
-	write(1, output, 11);
+	write(1, output, 10);
+	return (0);
+}
+
+static inline int	print_file_xattr(t_file_info* file_info, unsigned int width) {
+	char	xattr[4] = {' '};
+	int		index = 0;
+
+	// xattr[width + 1] = '\0';
+	ft_memset(xattr, ' ', 4);
+	if (file_info->has_extended_security)
+		xattr[index++] = '.';
+	if (file_info->has_acl)
+		xattr[index++] = '+';
+	if (file_info->has_xattr)
+		xattr[index++] = '@';
+	write(1, xattr, 1 + width);
 	return (0);
 }
 
@@ -406,10 +422,11 @@ static int	print_file_long(t_file_info* file_info, t_data* data) {
 		return (ERROR_FATAL);
 	if (print_file_mode(file_info))
 		return (ERROR_FATAL);
+	// ft_printf("max xattr w=%u\n", data->size_limits.max_xattr_w);
+	if (print_file_xattr(file_info, data->size_limits.max_xattr_w))
+		return (ERROR_FATAL);
 	if (print_file_nlink(file_info, data->size_limits.max_nlink_w))
 		return (ERROR_FATAL);
-	// ft_printf("max uid = %u\n", data->size_limits.max_user_w);
-	// ft_printf("max gid = %u\n", data->size_limits.max_group_w);
 	if ((data->options.statx_mask & STATX_UID) && print_file_user(file_info, data->size_limits.max_user_w))
 		return (ERROR_FATAL);
 	if ((data->options.statx_mask & STATX_GID) && print_file_group(file_info, data->size_limits.max_group_w))
@@ -509,7 +526,9 @@ int	ls_print(t_data* data) {
 	while (data->targets) {
 		clear_files(data);
 		res = ls_retrieve_dir_files(data->targets, data);
-		if (res == 0) {
+		if (res >= 0) {
+			if (res > 0)
+				ret = 1;
 			if (nbr_iter)
 				write(1, "\n", 1);
 			if ((nbr_iter || data->targets->next)
@@ -522,8 +541,6 @@ int	ls_print(t_data* data) {
 		}
 		else if (res < 0)
 			return (ERROR_FATAL);
-		else if (res > 0)
-			ret = 1;
 		ft_lstpop_front(&data->targets, &ls_free_file_info);
 		nbr_iter++;
 	}

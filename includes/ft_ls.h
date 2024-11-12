@@ -157,6 +157,9 @@ typedef struct s_ls_file_info {
 	char*			ln_target_filename;
 	unsigned short	ln_target_mode;
 	unsigned int	ln_target_nlink;
+	bool			has_extended_security;
+	bool			has_acl;
+	bool			has_xattr;
 } t_file_info;
 
 // typedef struct s_format_data {
@@ -176,6 +179,7 @@ typedef struct s_size_limits {
 	unsigned int	max_size_w;
 	unsigned int	min_nlink_w;
 	unsigned int	max_nlink_w;
+	unsigned int	max_xattr_w;
 } t_size_limits;
 
 typedef struct s_ls_data {
