@@ -582,6 +582,26 @@ static inline bool	check_recursive_subfolder(t_file_info* dir_info) {
 	return (true);
 }
 
+/// @brief Open given directory, store DIR* pointer in data and return
+/// directory's fd.
+/// @param dir_path 
+/// @param data 
+/// @return ```fd``` if a directory was opened
+/// ```-1``` if directory could not be opened. Error is printed.
+int	ls_open_dir(const char* dir_path, t_data* data) {
+	data->current_dir_list = opendir(dir_path);
+	if (data->current_dir_list == NULL) {
+		ls_error_open(dir_path, errno);
+		return (-1);
+	}
+	data->current_dir_fd = dirfd(data->current_dir_list);
+	if (data->current_dir_fd < 0) {
+		ls_error_open(dir_path, errno);
+		return (-1);
+	}
+	return (data->current_dir_fd);
+}
+
 /// @brief Read every files in dir and add them to files list.
 /// If recursive flag is enabled, also adds folder as the next target
 /// @param dir_info 
@@ -589,22 +609,16 @@ static inline bool	check_recursive_subfolder(t_file_info* dir_info) {
 /// @return ```1``` if a directory could not be opened
 /// ```-1``` if allocation error.
 int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
-	t_file_info*	dir_info = (t_file_info*)current_node->content;
 	t_file_info		*file_info = NULL;
 	t_list*			add_targets = NULL;
-	DIR*			dir = NULL;
 	struct dirent*	dir_entry = NULL;
-	int				ret = 0, res = 0, dir_fd = -1;
+	int				ret = 0, res = 0;
 
-	dir = opendir(dir_info->path);
-	if (dir == NULL)
-		return (ls_error_open(dir_info->path, errno));
-	dir_fd = dirfd(dir);
-	while (dir_fd > 0 && (dir_entry = readdir(dir))) {
+	while ((dir_entry = readdir(data->current_dir_list))) {
 		errno = 0;
 		if (data->options.filter != FILTER_ALL && check_name_filter(dir_entry, &data->options) == false)
 			continue;
-		if ((res = get_file_info_from_dir(dir_fd, dir_entry, &file_info, data))) {
+		if ((res = get_file_info_from_dir(data->current_dir_fd, dir_entry, &file_info, data))) {
 			ret = res;
 			if (res < 0)
 				break;
@@ -621,7 +635,7 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 			break;
 	}
 	if (!dir_entry && errno) {
-		ls_error_read(dir_info->path, errno);
+		ls_error_read(((t_file_info*)current_node->content)->path, errno);
 	}
 	else if ((ret < 0 || res < 0) && file_info)
 		ls_free_file_info(file_info);
@@ -631,6 +645,5 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 	}
 	if (add_targets != NULL)
 		ft_lstmerge(current_node, &add_targets);
-	closedir(dir);
 	return (ret);
 }

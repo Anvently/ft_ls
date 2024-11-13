@@ -9,6 +9,7 @@
 # include <stdlib.h>
 # include <grp.h>
 # include <pwd.h>
+# include <dirent.h>
 
 // @todo STATX_MODE should be required
 # define LS_STATX_DFT_MASK (STATX_TYPE | STATX_MODE)
@@ -193,6 +194,8 @@ typedef struct s_ls_data {
 	unsigned int*	columns_width;
 	// unsigned int*	columns_inode_width;
 	unsigned int	column_len;
+	DIR*			current_dir_list;
+	int				current_dir_fd;
 	t_colors		colors;
 } t_data;
 
@@ -213,9 +216,10 @@ int	ls_error_unparsable_color(char* color);
 int	ls_parse_args(int nbr, char** args, t_data* data, char** env);
 int	ls_retrieve_arg_file(const char* path, t_data* data);
 int	ls_retrieve_dir_files(t_list* current_node, t_data* data);
+int	ls_open_dir(const char* dir_path, t_data* data);
 
 int	ls_parse_colors(t_data* data, char** env);
-char*	ls_color_get(char* filename, unsigned short mode, unsigned int nlink, bool orphan, t_data* data);
+char*	ls_color_get(const char* filename, unsigned short mode, unsigned int nlink, bool orphan, t_data* data);
 
 char*	ls_format_size(size_t size);
 unsigned long	ls_convert_size_kilo(unsigned long size);

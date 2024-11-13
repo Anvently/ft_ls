@@ -407,15 +407,16 @@ static inline int	print_file_date(t_file_info* file_info, enum TIME_BY time_by) 
 }
 
 static int	print_ln_target_filename(t_file_info* file_info, t_data* data) {
-	write (1, " -> ", 4);
+	const char*	target = (file_info->ln_target_filename ? file_info->ln_target_filename : file_info->filename);
+
 	if (data->options.colorize) {
-		if (ft_printf("\033[%sm%s\033[%sm",
-			ls_color_get(file_info->ln_target_filename, file_info->ln_target_mode,
+		if (ft_printf(" -> \033[%sm%s\033[%sm",
+			ls_color_get(target, file_info->ln_target_mode,
 				file_info->ln_target_nlink, file_info->orphan, data),
-			file_info->ln_target_filename, data->colors.reset) < 0)
+			target, data->colors.reset) < 0)
 			return (ERROR_FATAL);
 	} else {
-		if (ft_printf("%s", file_info->ln_target_filename) < 0)
+		if (ft_printf(" -> %s", target) < 0)
 			return (ERROR_FATAL);
 	}
 	return (0);
@@ -514,8 +515,13 @@ static void	clear_files(t_data* data) {
 		free(data->columns_width);
 		data->columns_width = NULL;
 	}
+	if (data->current_dir_list) {
+		closedir(data->current_dir_list);
+		data->current_dir_list = NULL;
+	}
 	data->total_size = 0;
 	data->nbr_files = 0;
+	data->current_dir_fd = -1;
 	ls_reset_limits(data);
 }
 
@@ -529,22 +535,24 @@ int	ls_print(t_data* data) {
 	}
 	while (data->targets) {
 		clear_files(data);
-		res = ls_retrieve_dir_files(data->targets, data);
-		if (res >= 0) {
-			if (res > 0)
-				ret = 1;
+		if (ls_open_dir(((t_file_info*)data->targets->content)->path, data) >= 0) {
 			if (nbr_iter)
 				write(1, "\n", 1);
 			if ((nbr_iter || data->targets->next)
 				&& ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path) < 0)
 				return (ERROR_FATAL);
-			if (data->options.long_listing && print_total_size(data))
-				return (ERROR_FATAL);
-			if (print_files(data))
+			res = ls_retrieve_dir_files(data->targets, data);
+			if (res >= 0) {
+				if (res > 0)
+					ret = 1;
+				if (data->options.long_listing && print_total_size(data))
+					return (ERROR_FATAL);
+				if (print_files(data))
+					return (ERROR_FATAL);
+			}
+			else if (res < 0)
 				return (ERROR_FATAL);
 		}
-		else if (res < 0)
-			return (ERROR_FATAL);
 		ft_lstpop_front(&data->targets, &ls_free_file_info);
 		nbr_iter++;
 	}

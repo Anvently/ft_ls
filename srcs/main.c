@@ -25,6 +25,10 @@ static int	free_all(int status, t_data* data) {
 		free(data->columns_width);
 	if (data->colors.ls_colors)
 		ft_free_strs(data->colors.ls_colors);
+	if (data->current_dir_list) {
+		closedir(data->current_dir_list);
+		data->current_dir_list = NULL;
+	}
 	return (status);
 }
 

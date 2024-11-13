@@ -190,7 +190,7 @@ int	ls_parse_colors(t_data* data, char** env) {
 	return (ret);
 }
 
-static char*	ls_color_get_by_extension(char* filename, t_data* data) {
+static char*	ls_color_get_by_extension(const char* filename, t_data* data) {
 	char*	color;
 	char*	value;
 	size_t	extension_len;
@@ -202,14 +202,18 @@ static char*	ls_color_get_by_extension(char* filename, t_data* data) {
 		value = ft_strchr(color, '=');
 		if (!value++)
 			continue;
+		*(value - 1) = '\0';
 		extension_len = (value - 1) - (color + 1);
-		if (ft_strncmp_rev(filename, color + 1, extension_len) == 0)
+		if (ft_strncmp_rev(filename, color + 1, extension_len) == 0) {
+			*(value - 1) = '=';
 			return (value);
+		}
+		*(value - 1) = '=';
 	}
 	return (data->colors.reset);
 }
 
-char*	ls_color_get(char* filename, unsigned short mode, unsigned int nlink, bool orphan, t_data* data) {
+char*	ls_color_get(const char* filename, unsigned short mode, unsigned int nlink, bool orphan, t_data* data) {
 	char*	color = data->colors.reset;
 
 	if (mode == 0 && orphan)
