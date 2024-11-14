@@ -32,7 +32,7 @@ static const char*	extract_filename(const char* path) {
 		start++;
 	if (*start == '\0')
 		return (path);
-	// ft_printf("start = %s\n", start);
+	// printf("start = %s\n", start);
 	return (start);
 }
 
@@ -60,7 +60,7 @@ static int	comp_alpha(void* lhd, void* rhd) {
 static int	comp_extension(void* lhd, void* rhd) {
 	const char	*lext = extract_extension(((t_file_info*)lhd)->path);
 	const char	*rext = extract_extension(((t_file_info*)rhd)->path);
-	// ft_printf("for %s and %s => comparing %s and %s\n", ((t_file_info*)lhd)->path, ((t_file_info*)rhd)->path, lext, rext);
+	// printf("for %s and %s => comparing %s and %s\n", ((t_file_info*)lhd)->path, ((t_file_info*)rhd)->path, lext, rext);
 	if (lext == NULL) {
 		if (rext == NULL)
 			return (comp_alpha(lhd, rhd));
@@ -640,7 +640,7 @@ int	ls_retrieve_dir_files(t_list* current_node, t_data* data) {
 	else if ((ret < 0 || res < 0) && file_info)
 		ls_free_file_info(file_info);
 	else if (errno && ret >= 0) {
-		ft_dprintf(2, "Unknown exception: %d: %s", errno, strerror(errno));
+		dprintf(2, "Unknown exception: %d: %s", errno, strerror(errno));
 		ret = ERROR_FATAL;
 	}
 	if (add_targets != NULL)

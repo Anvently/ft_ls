@@ -50,9 +50,9 @@ static int	compute_columns(t_data* data) {
 	unsigned int	min_column_width = 0;
 	min_column_width = (data->options.inode ? data->size_limits.min_inode_w + 1 : 0) + data->size_limits.min_path_w;
 	int	max_nbr_column = data->options.tty_width / min_column_width;
-	// ft_printf("tty width = %u, min_column_width = %u ,max = %u\n", data->tty_width, min_column_width, data->size_limits.max_path_w + data->size_limits.max_inode_w);
+	// printf("tty width = %u, min_column_width = %u ,max = %u\n", data->tty_width, min_column_width, data->size_limits.max_path_w + data->size_limits.max_inode_w);
 	for (unsigned int nbr_column = max_nbr_column; nbr_column > 1; nbr_column--) {
-		// ft_printf("nbr col = %u\n", data->nbr_column);
+		// printf("nbr col = %u\n", data->nbr_column);
 		data->columns_width = malloc(2 * sizeof(unsigned int) * nbr_column);
 		if (data->columns_width == NULL)
 			return (ERROR_FATAL);
@@ -137,22 +137,22 @@ unsigned long	ls_convert_size_kilo(unsigned long size) {
 }
 
 static inline int	print_file_inode(t_file_info* file_info, unsigned int width) {
-	if (file_info->stat_failed == false && ft_printf("%*y ", width, (unsigned long) file_info->stat.stx_ino) < 0)
+	if (file_info->stat_failed == false && printf("%*lu ", width, (unsigned long) file_info->stat.stx_ino) < 0)
 		return (ERROR_FATAL);
-	else if (file_info->stat_failed == true && ft_printf("%*c ", width, '?') < 0)
+	else if (file_info->stat_failed == true && printf("%*c ", width, '?') < 0)
 		return (ERROR_FATAL);
 	return (0);
 }
 
 static inline int	print_file_name(t_file_info* file_info, unsigned int width, t_data* data) {
 	if (data->options.colorize) {
-		if (ft_printf("\033[%sm%s\033[%sm%*s",
+		if (printf("\033[%sm%s\033[%sm%*s",
 			ls_color_get(file_info->path, file_info->stat.stx_mode,
 				file_info->stat.stx_nlink, file_info->orphan, data),
 			file_info->path, data->colors.reset, (width ? width - (int)ft_strlen(file_info->path) : 0), "") < 0)
 			return (ERROR_FATAL);
 	} else {
-		if (ft_printf("%-*s", width, file_info->path) < 0)
+		if (printf("%-*s", width, file_info->path) < 0)
 			return (ERROR_FATAL);
 	}
 	return (0);
@@ -174,9 +174,9 @@ static int	print_single_row(t_data* data) {
 		if (print_file_short(file_info, data, file_info->path_w, file_info->inode_w))
 			return (ERROR_FATAL);
 		if (i + 1 == data->nbr_files)
-			write(1, "\n", 1);
+			printf("\n");
 		else
-			write(1, "  ", 2);
+			printf("  ");
 		file_node = file_node->next;
 	}
 	return (0);
@@ -204,10 +204,10 @@ static int	print_column(t_data* data) {
 				return (ERROR_FATAL);
 			}
 			if (col + 1 != data->nbr_column && file_nodes[col + 1])
-				write(1, "  ", 2);
+				printf("  ");
 			file_nodes[col] = file_nodes[col]->next;
 		}
-		write(1, "\n", 1);
+		printf("\n");
 	}
 	free(file_nodes);
 	return (0);
@@ -251,7 +251,7 @@ static int	print_file_mode(t_file_info* file_info) {
 			break;
 	}
 	if (file_info->stat_failed) {
-		if (ft_printf("%c?????????", output[0]) < 0)
+		if (printf("%c?????????", output[0]) < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
@@ -291,7 +291,7 @@ static int	print_file_mode(t_file_info* file_info) {
 		else
 			output[3] = 'T';
 	}
-	write(1, output, 10);
+	printf("%.10s", output);
 	return (0);
 }
 
@@ -307,32 +307,32 @@ static inline int	print_file_xattr(t_file_info* file_info, unsigned int width) {
 		xattr[index++] = '+';
 	if (file_info->has_xattr)
 		xattr[index++] = '@';
-	write(1, xattr, 1 + width);
+	printf("%.*s", 1 + width, xattr);
 	return (0);
 }
 
 static inline int	print_file_nlink(t_file_info* file_info, unsigned int width) {
 	if (file_info->stat_failed) {
-		if (ft_printf("%*c ", width, '?') < 0)
+		if (printf("%*c ", width, '?') < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
-	if (ft_printf("%*d ", width, file_info->stat.stx_nlink) < 0)
+	if (printf("%*d ", width, file_info->stat.stx_nlink) < 0)
 		return (ERROR_FATAL);
 	return (0);
 }
 
 static inline int	print_file_user(t_file_info* file_info, unsigned int width) {
 	if (file_info->stat_failed) {
-		if (ft_printf("%-*c ", width, '?') < 0)
+		if (printf("%-*c ", width, '?') < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
 	if (file_info->pw_name) {
-		if (ft_printf("%-*s ", width, file_info->pw_name) < 0)
+		if (printf("%-*s ", width, file_info->pw_name) < 0)
 			return (ERROR_FATAL);
 	} else {
-		if (ft_printf("%*u ", width, file_info->stat.stx_uid) < 0)
+		if (printf("%*u ", width, file_info->stat.stx_uid) < 0)
 			return (ERROR_FATAL);
 	}
 	return (0);
@@ -340,15 +340,15 @@ static inline int	print_file_user(t_file_info* file_info, unsigned int width) {
 
 static inline int	print_file_group(t_file_info* file_info, unsigned int width) {
 	if (file_info->stat_failed) {
-		if (ft_printf("%-*c ", width, '?') < 0)
+		if (printf("%-*c ", width, '?') < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
 	if (file_info->gr_name) {
-		if (ft_printf("%-*s ", width, file_info->gr_name) < 0)
+		if (printf("%-*s ", width, file_info->gr_name) < 0)
 			return (ERROR_FATAL);
 	} else {
-		if (ft_printf("%-*u ", width, file_info->stat.stx_gid) < 0)
+		if (printf("%-*u ", width, file_info->stat.stx_gid) < 0)
 			return (ERROR_FATAL);
 	}
 	return (0);
@@ -356,13 +356,13 @@ static inline int	print_file_group(t_file_info* file_info, unsigned int width) {
 
 static inline int	print_file_size(t_file_info* file_info, unsigned int width, bool human_readable) {
 	if (file_info->stat_failed) {
-		if (ft_printf("%*c ", width, '?') < 0)
+		if (printf("%*c ", width, '?') < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
-	if (human_readable && ft_printf("%*s ", width, ls_format_size(file_info->stat.stx_size)) < 0)
+	if (human_readable && printf("%*s ", width, ls_format_size(file_info->stat.stx_size)) < 0)
 		return (ERROR_FATAL);
-	else if (!human_readable && ft_printf("%*y ", width, file_info->stat.stx_size) < 0)
+	else if (!human_readable && printf("%*llu ", width, file_info->stat.stx_size) < 0)
 		return (ERROR_FATAL);
 	return (0);
 }
@@ -372,7 +372,7 @@ static inline int	print_file_date(t_file_info* file_info, enum TIME_BY time_by) 
 	signed long long*	time_ptr;
 
 	if (file_info->stat_failed) {
-		if (ft_printf("%*c ", 12, '?') < 0)
+		if (printf("%*c ", 12, '?') < 0)
 			return (ERROR_FATAL);
 		return (0);
 	}
@@ -401,8 +401,7 @@ static inline int	print_file_date(t_file_info* file_info, enum TIME_BY time_by) 
 		ft_memmove((void*)(str_date + 4 + 8), (const void*)(str_date + 4 + 16), 4);
 		str_date[11] = ' ';
 	}
-	write(1, str_date + 4, ft_strlen(str_date) - 4 - 1 - 5 - 3);
-	write(1, " ", 1);
+	printf("%.*s ", (int)ft_strlen(str_date) - 4 - 1 - 5 - 3, str_date + 4);
 	return (0);
 }
 
@@ -410,13 +409,13 @@ static int	print_ln_target_filename(t_file_info* file_info, t_data* data) {
 	const char*	target = (file_info->ln_target_filename ? file_info->ln_target_filename : file_info->filename);
 
 	if (data->options.colorize) {
-		if (ft_printf(" -> \033[%sm%s\033[%sm",
+		if (printf(" -> \033[%sm%s\033[%sm",
 			ls_color_get(target, file_info->ln_target_mode,
 				file_info->ln_target_nlink, file_info->orphan, data),
 			target, data->colors.reset) < 0)
 			return (ERROR_FATAL);
 	} else {
-		if (ft_printf(" -> %s", target) < 0)
+		if (printf(" -> %s", target) < 0)
 			return (ERROR_FATAL);
 	}
 	return (0);
@@ -427,7 +426,7 @@ static int	print_file_long(t_file_info* file_info, t_data* data) {
 		return (ERROR_FATAL);
 	if (print_file_mode(file_info))
 		return (ERROR_FATAL);
-	// ft_printf("max xattr w=%u\n", data->size_limits.max_xattr_w);
+	// printf("max xattr w=%u\n", data->size_limits.max_xattr_w);
 	if (print_file_xattr(file_info, data->size_limits.max_xattr_w))
 		return (ERROR_FATAL);
 	if (print_file_nlink(file_info, data->size_limits.max_nlink_w))
@@ -445,15 +444,15 @@ static int	print_file_long(t_file_info* file_info, t_data* data) {
 	if (data->options.deref_symlink == false && S_ISLNK(file_info->stat.stx_mode)
 		&& print_ln_target_filename(file_info, data))
 		return (ERROR_FATAL);
-	write(1, "\n", 1);
+	printf("\n");
 	return (0);
 }
 
 static inline int	print_total_size(t_data* data) {
 	if (data->options.long_listing) {
-		if (data->options.human_readable && ft_printf("total %s\n", ls_format_size(data->total_size)) < 0)
+		if (data->options.human_readable && printf("total %s\n", ls_format_size(data->total_size)) < 0)
 			return (ERROR_FATAL);
-		else if (!data->options.human_readable && ft_printf("total %y\n", ls_convert_size_kilo(data->total_size)) < 0)
+		else if (!data->options.human_readable && printf("total %lu\n", ls_convert_size_kilo(data->total_size)) < 0)
 			return (ERROR_FATAL);
 	}
 	return (0);
@@ -470,7 +469,7 @@ static int	print_lines(t_data* data) {
 			if (print_file_short((t_file_info*)current->content, data,
 				0, data->size_limits.max_inode_w))
 				return (ERROR_FATAL);
-			write(1, "\n", 1);
+			printf("\n");
 		}
 		current = current->next;
 	}
@@ -537,9 +536,9 @@ int	ls_print(t_data* data) {
 		clear_files(data);
 		if ((res = ls_open_dir(((t_file_info*)data->targets->content)->path, data)) >= 0) {
 			if (nbr_iter)
-				write(1, "\n", 1);
+				printf("\n");
 			if ((nbr_iter || data->targets->next || data->options.recursive)
-				&& ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path) < 0)
+				&& printf("%s:\n", ((t_file_info*)data->targets->content)->path) < 0)
 				return (ERROR_FATAL);
 			res = ls_retrieve_dir_files(data->targets, data);
 			if (res >= 0) {
