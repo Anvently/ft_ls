@@ -535,10 +535,10 @@ int	ls_print(t_data* data) {
 	}
 	while (data->targets) {
 		clear_files(data);
-		if (ls_open_dir(((t_file_info*)data->targets->content)->path, data) >= 0) {
+		if ((res = ls_open_dir(((t_file_info*)data->targets->content)->path, data)) >= 0) {
 			if (nbr_iter)
 				write(1, "\n", 1);
-			if ((nbr_iter || data->targets->next)
+			if ((nbr_iter || data->targets->next || data->options.recursive)
 				&& ft_printf("%s:\n", ((t_file_info*)data->targets->content)->path) < 0)
 				return (ERROR_FATAL);
 			res = ls_retrieve_dir_files(data->targets, data);
@@ -552,7 +552,8 @@ int	ls_print(t_data* data) {
 			}
 			else if (res < 0)
 				return (ERROR_FATAL);
-		}
+		} else
+			ret = 1;
 		ft_lstpop_front(&data->targets, &ls_free_file_info);
 		nbr_iter++;
 	}
