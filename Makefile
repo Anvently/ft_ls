@@ -36,11 +36,15 @@ $(INCLUDES)libft.h: libft/libft.h
 	@echo "------ UPDATING LIBFT HEADER -------\n"
 	cp libft/libft.h includes/libft.h
 
-$(LIBFT): $(INCLUDES)libft.h
+$(LIBFT): $(INCLUDES)libft.h update-submodules
 	@echo "\n-------COMPILING LIBFT--------------\n"
 	make -C libft/
 	make clean -C libft/
 	@echo "\n\n"
+
+update-submodules:
+	git submodule update --init --recursive
+	git submodule foreach git pull origin master
 
 clean:
 	@echo "\n-------------CLEAN--------------\n"
