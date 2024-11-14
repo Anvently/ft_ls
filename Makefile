@@ -36,7 +36,10 @@ $(INCLUDES)libft.h: libft/libft.h
 	@echo "------ UPDATING LIBFT HEADER -------\n"
 	cp libft/libft.h includes/libft.h
 
-$(LIBFT): $(INCLUDES)libft.h update-submodules
+libft/libft.h:
+	$(MAKE) update-submodules
+
+$(LIBFT): $(INCLUDES)libft.h
 	@echo "\n-------COMPILING LIBFT--------------\n"
 	make -C libft/
 	make clean -C libft/
